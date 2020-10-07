@@ -1,0 +1,23 @@
+.masthead {
+  min-height: 100%; /* Fallback for browsers do NOT support vh unit */
+  min-height: 100vh;
+
+  display: flex;
+  align-items: center;
+}
+
+#main-header{
+  font-size: 70px;
+}
+
+@media (max-width: 540px) {
+  #main-header {
+    font-size: 50px;
+  }
+}
+
+@media (max-height: 550px) {
+  #logo{
+    display: none;
+  }
+}

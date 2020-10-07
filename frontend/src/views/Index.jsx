@@ -1,6 +1,6 @@
 import React from "react";
 import {Container} from "reactstrap";
-import "../assets/scss/index.scss";
+import "../assets/scss/views/index.scss";
 import logo from "../assets/images/logo.svg";
 import JoinRoomButton from "../components/index/JoinRoomButton";
 import RoomCodeInput from "../components/index/RoomCodeInput";
@@ -66,9 +66,9 @@ class Index extends React.Component {
         return (
             <header className="masthead d-flex">
                 <Container className="text-center my-auto">
-                    <div className="mx-auto" style={{width: "max-content"}}>
-                        <img src={logo} alt="Project Klaus" style={{maxHeight: "240px"}}/>
-                        <h1 className="mb-3" style={{fontWeight: 600, fontSize: "70px"}}>Project•Klaus</h1>
+                    <div className="mx-auto" style={{width: "max-content", maxWidth: "100%"}}>
+                        <img id="logo" src={logo} alt="Project Klaus" style={{maxHeight: "240px"}}/>
+                        <h1 id="main-header" className="mb-3" style={{fontWeight: 600}}>Project•Klaus</h1>
                         {input}
                         {button}
                     </div>
