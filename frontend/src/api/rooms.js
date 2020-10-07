@@ -12,3 +12,9 @@ export async function CreateRoom(name) {
 
     return response.json();
 }
+
+export async function JoinRoom(key) {
+    const response = await fetch(`/api/v1/room/${key}`);
+
+    return response.json();
+}

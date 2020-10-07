@@ -1,7 +1,6 @@
 import express from "express";
 import RoomModel from "../models/Room"
 import {APIResponse, APIResponseStatus} from "../APIUtilities";
-import {Document} from "mongoose";
 
 const router = express.Router();
 
@@ -11,11 +10,23 @@ router.post('/room', async function (req, res) {
 
     await newRoom.save()
 
-    let responseData = {
-        key: newRoom.key,
-        name: newRoom.name
-    };
-    res.send(APIResponse(APIResponseStatus.Success, responseData));
+    res.json(APIResponse(APIResponseStatus.Success, newRoom.exportData()));
+});
+
+router.get('/room/:roomKey', async function (req, res) {
+    let room = await RoomModel.findOne({key: req.params.roomKey});
+
+    if (room === null){
+        res.json(APIResponse(APIResponseStatus.Fail, {
+            exists: false,
+            room: null
+        }))
+    } else {
+        res.json(APIResponse(APIResponseStatus.Success, {
+            exists: true,
+            room: room.exportData()
+        }));
+    }
 });
 
 export default router;

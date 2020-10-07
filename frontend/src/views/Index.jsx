@@ -6,7 +6,7 @@ import JoinRoomButton from "../components/index/JoinRoomButton";
 import RoomCodeInput from "../components/index/RoomCodeInput";
 import CreateRoomButton from "../components/index/CreateRoomButton";
 import RoomNameInput from "../components/index/RoomNameInput";
-import {CreateRoom} from "../api/rooms";
+import {CreateRoom, JoinRoom} from "../api/rooms";
 
 class Index extends React.Component {
     constructor(props) {
@@ -24,6 +24,7 @@ class Index extends React.Component {
         this.handleRoomNameInput = this.handleRoomNameInput.bind(this);
         this.handleSwitchMode = this.handleSwitchMode.bind(this);
         this.onCreateRoom = this.onCreateRoom.bind(this);
+        this.onJoinRoom = this.onJoinRoom.bind(this);
     }
 
     handleRoomCodeInput(event) {
@@ -38,11 +39,25 @@ class Index extends React.Component {
         this.setState({joinRoom: joinState, roomCode: "", roomName: "", roomNameValid: false});
     }
 
+    async onJoinRoom(event){
+        this.setState({loading: true});
+        try {
+            let response = await JoinRoom(this.state.roomCode);
+            if (response.data.exists){
+                this.props.history.push(`/room/${this.state.roomCode}`);
+            } else {
+                this.setState({loading: false, roomCode: ""});
+            }
+        } catch (e) {
+            console.error(e);
+            this.setState({loading: false});
+        }
+    }
+
     async onCreateRoom(event){
         this.setState({loading: true});
         try {
             let response = await CreateRoom(this.state.roomName);
-            console.log(response);
             if (response.status === "success"){
                 this.props.history.push(`/room/${response.data.key}`)
             } else {
@@ -50,7 +65,7 @@ class Index extends React.Component {
             }
         } catch (e) {
             console.error(e);
-            this.setState({loading: false})
+            this.setState({loading: false});
         }
     }
 
@@ -58,7 +73,7 @@ class Index extends React.Component {
         let button, input;
         if (this.state.joinRoom){
             input = <RoomCodeInput disabled={this.state.loading} onChange={this.handleRoomCodeInput} code={this.state.roomCode}/>;
-            button = <JoinRoomButton loading={this.state.loading} roomCode={this.state.roomCode} onModeSwitch={this.handleSwitchMode}/>;
+            button = <JoinRoomButton onClick={this.onJoinRoom} loading={this.state.loading} roomCode={this.state.roomCode} onModeSwitch={this.handleSwitchMode}/>;
         } else {
             input = <RoomNameInput disabled={this.state.loading} onChange={this.handleRoomNameInput} name={this.state.roomName}/>;
             button = <CreateRoomButton onCreateRoom={this.onCreateRoom} loading={this.state.loading} valid={this.state.roomNameValid} onModeSwitch={this.handleSwitchMode}/>;
