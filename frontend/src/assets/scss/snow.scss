@@ -38,6 +38,10 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
       animation: fall-#{$i} $fall-duration $fall-delay linear infinite;
     }
 
+    @media (prefers-reduced-motion) {
+      animation: none !important;
+    }
+
     @keyframes fall-#{$i} {
       #{percentage($random-yoyo-time)} {
         transform: translate($random-x-end, $random-yoyo-y) scale($random-scale);
