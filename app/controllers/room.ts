@@ -3,11 +3,11 @@ import RoomModel from "../models/Room"
 
 const router = express.Router();
 
-router.post('/room', function (req, res) {
+router.post('/room', async function (req, res) {
     let name = req.body.name;
     let newRoom = new RoomModel({"name": name});
 
-    newRoom.save();
+    await newRoom.save()
     res.send(newRoom.toJSON());
 });
 
