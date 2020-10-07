@@ -232,6 +232,6 @@ dist
 
 ### Project Specific
 /coverage
-/server/build
+/frontend/build
 /build
 
