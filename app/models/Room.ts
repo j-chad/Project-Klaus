@@ -1,7 +1,12 @@
-import mongoose from "mongoose";
+import mongoose, {Document, Schema} from "mongoose";
 import {makeKey} from "../utilities";
 
-const RoomSchema = new mongoose.Schema({
+export interface IRoom extends Document {
+    key: string;
+    name: string;
+}
+
+export const RoomSchema = new Schema({
     key: {
         type: String,
         index: true,
@@ -18,6 +23,6 @@ const RoomSchema = new mongoose.Schema({
     }
 })
 
-const Room = mongoose.model('Room', RoomSchema);
+const Room = mongoose.model<IRoom>('Room', RoomSchema);
 
 export default Room;

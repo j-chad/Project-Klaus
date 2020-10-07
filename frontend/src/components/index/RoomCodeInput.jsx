@@ -23,9 +23,11 @@ export default class RoomCodeInput extends React.Component {
     }
 
     onRoomCodeChange(event){
-        event.target.value = this.recoverRoomCode(event.target.value);
-        if (event.target.validity.valid) {
-            this.props.onChange(event);
+        if (!this.props.disabled){
+            event.target.value = this.recoverRoomCode(event.target.value);
+            if (event.target.validity.valid) {
+                this.props.onChange(event);
+            }
         }
     }
 
