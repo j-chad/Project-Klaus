@@ -82,7 +82,7 @@ class Index extends React.Component {
             <header className="masthead d-flex">
                 <Container className="text-center my-auto">
                     <div className="mx-auto" style={{width: "max-content", maxWidth: "100%"}}>
-                        <img id="logo" src={logo} alt="Project Klaus" style={{maxHeight: "240px"}}/>
+                        <img id="logo" src={logo} alt="Project Klaus" style={{maxHeight: "220px", marginBottom: "20px"}}/>
                         <h1 id="main-header" className="mb-3" style={{fontWeight: 600}}>Project•Klaus</h1>
                         {input}
                         {button}
