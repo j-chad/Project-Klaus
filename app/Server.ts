@@ -3,6 +3,8 @@ import * as path from "path";
 
 import apiRouter from "./controllers/api";
 import mongoose from "mongoose";
+import {validateUser} from "./UserMiddleware";
+import cookieParser from "cookie-parser";
 
 export default class Server {
 
@@ -12,6 +14,8 @@ export default class Server {
 		this.app = app;
 
 		app.use(express.json());
+		app.use(cookieParser())
+		app.use(validateUser);
 
 		this.app.use(express.static(path.resolve("./") + "/build/frontend"));
 		this.app.use("/api/v1/", apiRouter);
