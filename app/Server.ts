@@ -5,6 +5,8 @@ import apiRouter from "./controllers/api";
 import mongoose from "mongoose";
 import {validateUser} from "./UserMiddleware";
 import cookieParser from "cookie-parser";
+import morgan from "morgan";
+import logger from "./config/logging";
 
 export default class Server {
 
@@ -13,9 +15,10 @@ export default class Server {
 	constructor(app: Express) {
 		this.app = app;
 
-		app.use(express.json());
-		app.use(cookieParser())
-		app.use(validateUser);
+		this.app.use(express.json());
+		this.app.use(cookieParser());
+		this.app.use(validateUser);
+		this.app.use(morgan('combined', {stream: {write: message => logger.http(message)}}));
 
 		this.app.use(express.static(path.resolve("./") + "/build/frontend"));
 		this.app.use("/api/v1/", apiRouter);
@@ -33,6 +36,6 @@ export default class Server {
 		}).catch(r => {
 			console.error("Error connecting to db");
 		});
-		this.app.listen(port, () => console.log(`Server listening on port ${port}!`));
+		this.app.listen(port, () => logger.info(`Server listening on port ${port}!`));
 	}
 }

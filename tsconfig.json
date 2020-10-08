@@ -10,7 +10,7 @@
     "lib": ["es2019"],
     "allowJs": true,
     "forceConsistentCasingInFileNames": true,
-    "sourceMap": true,
+    "sourceMap": true
   },
   "include": [
     "app/**/*.ts",
