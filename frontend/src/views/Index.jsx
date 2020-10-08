@@ -79,16 +79,18 @@ class Index extends React.Component {
             button = <CreateRoomButton onCreateRoom={this.onCreateRoom} loading={this.state.loading} valid={this.state.roomNameValid} onModeSwitch={this.handleSwitchMode}/>;
         }
         return (
-            <header className="masthead d-flex">
-                <Container className="text-center my-auto">
-                    <div className="mx-auto" style={{width: "max-content", maxWidth: "100%"}}>
-                        <img id="logo" src={logo} alt="Project Klaus" style={{maxHeight: "220px", marginBottom: "20px"}}/>
-                        <h1 id="main-header" className="mb-3" style={{fontWeight: 600}}>Project•Klaus</h1>
-                        {input}
-                        {button}
-                    </div>
-                </Container>
-            </header>
+            <div id="index-view">
+                <header className="masthead d-flex">
+                    <Container className="text-center my-auto">
+                        <div className="mx-auto" style={{width: "max-content", maxWidth: "100%"}}>
+                            <img id="logo" src={logo} alt="Project Klaus" style={{maxHeight: "220px", marginBottom: "20px"}}/>
+                            <h1 id="main-header" className="mb-3" style={{fontWeight: 600}}>Project•Klaus</h1>
+                            {input}
+                            {button}
+                        </div>
+                    </Container>
+                </header>
+            </div>
         );
     }
 }

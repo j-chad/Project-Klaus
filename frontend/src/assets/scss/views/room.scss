@@ -1,0 +1,13 @@
+#room-view {
+  .masthead {
+    min-height: 100%; /* Fallback for browsers do NOT support vh unit */
+    min-height: 100vh;
+
+    display: flex;
+    align-items: center;
+  }
+
+  #main-header{
+    font-size: 50px;
+  }
+}

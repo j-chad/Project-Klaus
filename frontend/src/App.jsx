@@ -2,6 +2,7 @@ import React, { Component } from 'react';
 import {BrowserRouter, Route, Switch} from "react-router-dom";
 
 import Index from "./views/Index";
+import Room from "./views/Room";
 
 import "./assets/scss/blk-design-system-react.scss";
 import "./assets/css/nucleo-icons.css";
@@ -15,6 +16,7 @@ class App extends Component {
                 <Snow number={70}/>
                 <BrowserRouter>
                     <Switch>
+                        <Route path='/room/:id' component={Room}/>
                         <Route path='/' component={Index}/>
                     </Switch>
                 </BrowserRouter>
