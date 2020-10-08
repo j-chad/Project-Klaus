@@ -26,10 +26,12 @@
     "@types/mongoose": "^5.7.36",
     "concurrently": "^5.1.0",
     "esm": "^3.2.25",
-    "nodemon": "^2.0.3"
+    "nodemon": "^2.0.3",
+    "ts-node": "^9.0.0"
   },
   "scripts": {
-    "start": "npx ts-node index.ts"
+    "start": "nodemon",
+    "build": "tsc --outDir build/server"
   },
   "proxy": "http://localhost:3001",
   "browserslist": {
