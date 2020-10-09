@@ -113,6 +113,7 @@ export const UserSchema = new Schema({
         required: true,
         minlength: 4,
         maxlength: 30,
+        match: [/^[a-zA-Z0-9 ]+$/, "name can only be letters and numbers"],
         default: function () {
             return defaultNames[Math.floor(Math.random() * defaultNames.length)];
         }
