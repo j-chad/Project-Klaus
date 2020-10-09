@@ -8,8 +8,8 @@ export default class NameList extends React.Component {
 
     render() {
         return (
-            <div className="h-100 p-3">
-                <div className="h-100 w-100 bg-dark rounded" style={{opacity:"0.6"}}></div>
+            <div className="p-3" style={{height: "100vh", maxHeight:"100%"}}>
+                <div className="h-100 w-100 bg-primary rounded" style={{opacity: "0.6"}}/>
             </div>
         );
     }

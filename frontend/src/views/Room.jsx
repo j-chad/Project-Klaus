@@ -39,12 +39,12 @@ class Room extends React.Component {
     render() {
 
         return (
-            <Container id="room-view">
+            <Container fluid id={"room-view"} style={{overflow: "auto"}}>
                 <Row style={{height: "100vh"}}>
-                    <Col sm="1" md="6" lg="5" xl={"4"} className="px-0">
+                    <Col sm="12" md="6" lg="5" xl="3" className="px-0 order-last order-md-first">
                         <NameList/>
                     </Col>
-                    <Col sm="12" md="6" lg="7" xl={"8"} className="px-0">
+                    <Col sm="12" md="6" lg="7" xl="9" className="px-0 order-first order-md-last">
                         <MainContainer name={this.state.name}/>
                     </Col>
                 </Row>
