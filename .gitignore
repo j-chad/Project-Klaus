@@ -234,4 +234,4 @@ dist
 /coverage
 /frontend/build
 /build
-
+*.env

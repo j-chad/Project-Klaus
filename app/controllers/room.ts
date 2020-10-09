@@ -1,6 +1,6 @@
 import express from "express";
 import RoomModel from "../models/Room"
-import {APIResponse, APIResponseStatus} from "../APIUtilities";
+import {APIResponse, APIResponseStatus} from "../helpers/APIUtilities";
 
 const router = express.Router();
 

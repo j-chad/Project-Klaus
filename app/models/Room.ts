@@ -1,5 +1,5 @@
 import mongoose, {Document, Schema} from "mongoose";
-import {makeKey} from "../utilities";
+import {makeKey} from "../helpers/utilities";
 
 export interface IRoomDocument extends Document {
     key: string;

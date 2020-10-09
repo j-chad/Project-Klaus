@@ -1,5 +1,6 @@
-import UserModel, {IUserDocument} from "./models/User";
+import UserModel, {IUserDocument} from "../models/User";
 import * as jwt from "jsonwebtoken";
+import config from "../config/config";
 
 interface IUserPayload {
 	sub: string,
@@ -14,7 +15,7 @@ export async function validateUser(req, res, next){
 	} else {
 		let payload: IUserPayload;
 		try{
-			payload = jwt.verify(userToken, "testing, remove me!");
+			payload = jwt.verify(userToken, config.secret);
 		} catch (e) {
 			let token = await newUserToken();
 			next();
@@ -39,7 +40,7 @@ async function signJWT(user: IUserDocument){
 	return jwt.sign({
 		sub: user.uuid,
 		name: user.name
-	}, "testing, remove me!");
+	}, config.secret);
 }
 
 async function newUserToken() {

@@ -3,7 +3,7 @@ import * as path from "path";
 
 import apiRouter from "./controllers/api";
 import mongoose from "mongoose";
-import {validateUser} from "./UserMiddleware";
+import {validateUser} from "./middleware/UserMiddleware";
 import cookieParser from "cookie-parser";
 import morgan from "morgan";
 import logger from "./config/logging";
