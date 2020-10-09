@@ -20,8 +20,6 @@ function handleValidationError(res: Response, e: mongoose.Error.ValidationError)
 	Object.keys(errors).forEach((key) => {
 		let error = errors[key];
 		data[key] = {
-			"kind": error.kind,
-			"path": error.path,
 			"value": error.value,
 			"msg": error.message,
 		}

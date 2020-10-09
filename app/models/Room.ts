@@ -16,6 +16,8 @@ export const RoomSchema = new Schema({
         index: true,
         unique: true,
         required: true,
+        maxlength: 8,
+        minlength: 8,
         default: function () {
             return makeKey(8);
         }
@@ -23,7 +25,9 @@ export const RoomSchema = new Schema({
     name: {
         type: String,
         required: true,
-        minlength: 4
+        match: [/^[a-zA-Z0-9]+$/, "name can only be letters and numbers"],
+        minlength: 4,
+        maxlength: 25
     }
 })
 
