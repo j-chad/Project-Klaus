@@ -8,6 +8,7 @@ import cookieParser from "cookie-parser";
 import morgan from "morgan";
 import logger from "./config/logging";
 import config from "./config/config";
+import ErrorHandler from "./middleware/ErrorHandlerMiddleware";
 
 export default class Server {
 
@@ -23,6 +24,8 @@ export default class Server {
 
 		this.app.use(express.static(path.resolve("./") + "/build/frontend"));
 		this.app.use("/api/v1/", apiRouter);
+
+		this.app.use(ErrorHandler);
 
 		this.app.get("*", (req, res) => {
 			res.sendFile(path.resolve("./") + "/build/frontend/index.html");
