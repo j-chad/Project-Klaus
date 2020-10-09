@@ -7,6 +7,7 @@ import {validateUser} from "./middleware/UserMiddleware";
 import cookieParser from "cookie-parser";
 import morgan from "morgan";
 import logger from "./config/logging";
+import config from "./config/config";
 
 export default class Server {
 
@@ -29,13 +30,17 @@ export default class Server {
 	}
 
 	start(port) {
-		mongoose.connect('mongodb://localhost/klaus', {
+		mongoose.connect(config.db, {
 			useNewUrlParser: true,
 			useUnifiedTopology: true,
 			useCreateIndex: true
-		}).catch(r => {
-			console.error("Error connecting to db");
+		}).then(()=>{
+			logger.verbose("Database Connected");
+		}).catch((e)=>{
+			logger.error(e);
 		});
-		this.app.listen(port, () => logger.info(`Server listening on port ${port}!`));
+		this.app.listen(port, ()=>{
+			logger.info(`Server listening on port ${port}!`);
+		});
 	}
 }

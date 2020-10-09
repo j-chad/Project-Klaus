@@ -2,7 +2,8 @@ const config = {
 	local: {
 		mode: "local",
 		port: 5000,
-		secret: process.env.SERVER_SECRET_KEY
+		secret: process.env.SERVER_SECRET_KEY,
+		db: process.env.SERVER_DB
 	},
 	prod: {
 		mode: "prod",
