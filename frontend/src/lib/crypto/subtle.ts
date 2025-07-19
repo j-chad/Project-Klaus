@@ -50,7 +50,7 @@ async function generateSymmetricKey(): Promise<CryptoKey> {
 			length: 256
 		} satisfies AesKeyGenParams,
 		true,
-		['encrypt']
+		['encrypt', 'decrypt']
 	);
 }
 
