@@ -12,12 +12,14 @@ export async function generatePublicationKeypair(): Promise<CryptoKeyPair> {
 export async function encryptPublicationMessage(
 	message: string,
 	publicKeys: CryptoKey[]
-): Promise<ArrayBuffer> {
+): Promise<Uint8Array> {
 	const permutedKeys = securePermutePublicKeys(publicKeys);
 
-	let messageBuffer = new TextEncoder().encode(message).buffer as ArrayBuffer; // technically is an ArrayBufferLike but will be replaced immediately with an ArrayBuffer
-	for (const key of permutedKeys) {
-		messageBuffer = await crypto.subtle.encrypt({ name: 'RSA-OAEP' }, key, messageBuffer);
+	let messageBuffer: Uint8Array = new TextEncoder().encode(message);
+	const nonceBuffer = new Uint8Array(12); // AES-GCM nonce size is 12 bytes / 96 bits
+
+	for (const rsaKey of permutedKeys) {
+		messageBuffer = await hybridEncrypt(messageBuffer, rsaKey, nonceBuffer);
 	}
 
 	return messageBuffer;
@@ -48,6 +50,70 @@ export async function decryptPublicationMessagesRound(
 	return decryptedMessages;
 }
 
+/** Generates a 256-bit symmetric key for AES-GCM encryption.
+ *
+ * This is used for hybrid encryption, where the symmetric key is used to encrypt the actual message,
+ */
+async function generateSymmetricKey(): Promise<CryptoKey> {
+	return crypto.subtle.generateKey(
+		{
+			name: 'AES-GCM',
+			length: 256
+		} satisfies AesKeyGenParams,
+		true,
+		['encrypt']
+	);
+}
+
+/** Hybrid encryption function that combines RSA and AES-GCM encryption.
+ *
+ * To allow for large messages, the message is first encrypted with a randomly generated AES key,
+ * which is then encrypted with the provided RSA public key.
+ *
+ * @param {Uint8Array} message - The message to encrypt.
+ * @param {CryptoKey} rsaKey - The RSA public key to use for encrypting the AES key.
+ * @param {Uint8Array} nonceBuffer - A buffer to hold the nonce (initialization vector) for AES-GCM encryption. This should be 12 bytes long.
+ */
+async function hybridEncrypt(
+	message: Uint8Array,
+	rsaKey: CryptoKey,
+	nonceBuffer: Uint8Array
+): Promise<Uint8Array> {
+	if (nonceBuffer.length !== 12) {
+		throw new Error('nonceBuffer must be exactly 12 bytes long for AES-GCM');
+	}
+
+	const aesKey = await generateSymmetricKey();
+	const iv = crypto.getRandomValues(nonceBuffer);
+
+	const cipherText = await crypto.subtle.encrypt(
+		{
+			name: 'AES-GCM',
+			iv
+		} satisfies AesGcmParams,
+		aesKey,
+		message
+	);
+
+	const rawAesKey = await crypto.subtle.exportKey('raw', aesKey);
+
+	const combinedKeyData = new Uint8Array(nonceBuffer.length + rawAesKey.byteLength);
+	combinedKeyData.set(nonceBuffer, 0);
+	combinedKeyData.set(new Uint8Array(rawAesKey), nonceBuffer.length);
+
+	const encryptedKeyMaterial = await crypto.subtle.encrypt(
+		{ name: 'RSA-OAEP' },
+		rsaKey,
+		combinedKeyData
+	);
+
+	const encryptedMessage = new Uint8Array(encryptedKeyMaterial.byteLength + cipherText.byteLength);
+	encryptedMessage.set(new Uint8Array(encryptedKeyMaterial), 0);
+	encryptedMessage.set(new Uint8Array(cipherText), encryptedKeyMaterial.byteLength);
+
+	return encryptedMessage;
+}
+
 /**
  * Returns a cryptographically secure random integer between min and max, inclusive.
  *
@@ -57,7 +123,7 @@ export async function decryptPublicationMessagesRound(
  * @param {number} max - the highest integer in the desired range (inclusive)
  * @returns {number} Random number
  */
-export function secureRandomInt(min: number, max: number): number {
+function secureRandomInt(min: number, max: number): number {
 	const RAND_MAX_RANGE_SIZE = 2 ** 53;
 	const buffer = new Uint32Array(2 ** 10);
 
@@ -92,21 +158,6 @@ export function secureRandomInt(min: number, max: number): number {
 		result = (n1 & 0x1f_ffff) * 0x1_0000_0000 + n2;
 	} while (result >= rejectionThreshold);
 	return min + (result % rangeSize);
-}
-
-/** Generates a symmetric key for AES-GCM encryption.
- *
- * This is used for hybrid encryption, where the symmetric key is used to encrypt the actual message,
- */
-export async function generateSymmetricKey(): Promise<CryptoKey> {
-	return crypto.subtle.generateKey(
-		{
-			name: 'AES-GCM',
-			length: 256
-		},
-		false,
-		['encrypt', 'decrypt']
-	);
 }
 
 /**
