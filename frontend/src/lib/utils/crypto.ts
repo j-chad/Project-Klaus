@@ -1,12 +1,14 @@
-const RSA_KEY_PARAMS: RsaHashedKeyGenParams = {
-	name: 'RSA-OAEP',
-	modulusLength: 4096,
-	publicExponent: new Uint8Array([0x01, 0x00, 0x01]), // 65537,
-	hash: 'SHA-512'
-};
-
 export async function generatePublicationKeypair(): Promise<CryptoKeyPair> {
-	return crypto.subtle.generateKey(RSA_KEY_PARAMS, false, []);
+	return crypto.subtle.generateKey(
+		{
+			name: 'RSA-OAEP',
+			modulusLength: 4096,
+			publicExponent: new Uint8Array([0x01, 0x00, 0x01]), // 65537,
+			hash: 'SHA-512'
+		} satisfies RsaHashedKeyGenParams,
+		false,
+		['encrypt', 'decrypt']
+	);
 }
 
 export async function encryptPublicationMessage(
