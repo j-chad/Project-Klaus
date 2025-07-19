@@ -1,3 +1,5 @@
+const NONCE_BYTES = 12; // AES-GCM nonce size is 12 bytes
+
 export async function generatePublicationKeypair(): Promise<CryptoKeyPair> {
 	return crypto.subtle.generateKey(
 		{
@@ -28,28 +30,13 @@ export async function encryptPublicationMessage(
 }
 
 export async function decryptPublicationMessagesRound(
-	messages: ArrayBuffer[],
+	messages: Uint8Array[],
 	privateKey: CryptoKey
 ): Promise<ArrayBuffer[]> {
-	const decryptedMessages: ArrayBuffer[] = [];
-
-	for (const message of messages) {
-		let decryptedBuffer: ArrayBuffer;
-		try {
-			decryptedBuffer = await crypto.subtle.decrypt({ name: 'RSA-OAEP' }, privateKey, message);
-		} catch (error) {
-			if (error instanceof DOMException && error.name === 'InvalidAccessError') {
-				// incorrect key - skip this message
-				continue;
-			}
-
-			throw error;
-		}
-
-		decryptedMessages.push(decryptedBuffer);
-	}
-
-	return decryptedMessages;
+	const decryptionTasks = messages.map((encryptedMessage) =>
+		hybridDecrypt(encryptedMessage, privateKey)
+	);
+	return (await Promise.all(decryptionTasks)).filter((result) => result !== null);
 }
 
 /** Generates a 256-bit symmetric key for AES-GCM encryption.
@@ -81,8 +68,8 @@ async function hybridEncrypt(
 	rsaKey: CryptoKey,
 	nonceBuffer: Uint8Array
 ): Promise<Uint8Array> {
-	if (nonceBuffer.length !== 12) {
-		throw new Error('nonceBuffer must be exactly 12 bytes long for AES-GCM');
+	if (nonceBuffer.length !== NONCE_BYTES) {
+		throw new Error(`nonceBuffer must be exactly ${NONCE_BYTES} bytes long for AES-GCM`);
 	}
 
 	const aesKey = await generateSymmetricKey();
@@ -98,10 +85,7 @@ async function hybridEncrypt(
 	);
 
 	const rawAesKey = await crypto.subtle.exportKey('raw', aesKey);
-
-	const combinedKeyData = new Uint8Array(nonceBuffer.length + rawAesKey.byteLength);
-	combinedKeyData.set(nonceBuffer, 0);
-	combinedKeyData.set(new Uint8Array(rawAesKey), nonceBuffer.length);
+	const combinedKeyData = combineNonceAndKey(iv, rawAesKey);
 
 	const encryptedKeyMaterial = await crypto.subtle.encrypt(
 		{ name: 'RSA-OAEP' },
@@ -114,6 +98,58 @@ async function hybridEncrypt(
 	encryptedMessage.set(new Uint8Array(cipherText), encryptedKeyMaterial.byteLength);
 
 	return encryptedMessage;
+}
+
+async function hybridDecrypt(
+	message: Uint8Array,
+	rsaPrivateKey: CryptoKey
+): Promise<ArrayBuffer | null> {
+	const modulusBits = (rsaPrivateKey.algorithm as RsaHashedKeyGenParams).modulusLength;
+	const encryptedMessageByteLength = modulusBits / 8;
+
+	const encryptedKeyMaterial = message.slice(0, encryptedMessageByteLength);
+	const cipherText = message.slice(encryptedMessageByteLength);
+
+	let decryptedKeyMaterial: ArrayBuffer;
+	try {
+		decryptedKeyMaterial = await crypto.subtle.decrypt(
+			{ name: 'RSA-OAEP' },
+			rsaPrivateKey,
+			encryptedKeyMaterial
+		);
+	} catch (error) {
+		if (error instanceof DOMException && error.name === 'InvalidAccessError') {
+			// incorrect key
+			return null;
+		}
+
+		throw error;
+	}
+
+	const { nonce, key: rawKey } = splitNonceAndKey(decryptedKeyMaterial);
+	const key = await crypto.subtle.importKey('raw', rawKey, 'AES-GCM', false, ['decrypt']);
+
+	return await crypto.subtle.decrypt(
+		{
+			name: 'AES-GCM',
+			iv: nonce
+		} satisfies AesGcmParams,
+		key,
+		cipherText
+	);
+}
+
+function combineNonceAndKey(nonce: Uint8Array, key: ArrayBuffer): Uint8Array {
+	const combined = new Uint8Array(NONCE_BYTES + key.byteLength);
+	combined.set(nonce, 0);
+	combined.set(new Uint8Array(key), NONCE_BYTES);
+	return combined;
+}
+
+function splitNonceAndKey(combined: ArrayBuffer): { nonce: ArrayBuffer; key: ArrayBuffer } {
+	const nonce = combined.slice(0, NONCE_BYTES);
+	const key = combined.slice(NONCE_BYTES);
+	return { nonce, key };
 }
 
 /**
