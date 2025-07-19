@@ -71,11 +71,11 @@ export function secureRandomInt(min: number, max: number): number {
 /**
  * Securely permutes the order of an array using the Fisher-Yates shuffle algorithm and a CSRNG.
  *
- * shuffling is done in place
+ * Shuffling is done in place, and the input array is modified directly.
  *
  * @template T - The type of the elements in the array.
- * @param {T[]} array - An array of objects
- * @return {T[]} A new array of CryptoKey objects with the order of keys shuffled.
+ * @param {T[]} array - An array of elements to be shuffled.
+ * @return {T[]} The same array with its elements shuffled in place.
  */
 export function securePermute<T>(array: T[]): T[] {
 	// Fisher-Yates shuffle algorithm
