@@ -87,3 +87,22 @@ export function securePermute<T>(array: T[]): T[] {
 
 	return array;
 }
+
+/**
+ * Calculates the SHA-256 fingerprint of a CryptoKey.
+ *
+ * This function exports the key as a raw binary format, computes its SHA-256 hash,
+ * and returns the hash as a hexadecimal string.
+ *
+ * @param {CryptoKey} key - The CryptoKey to calculate the fingerprint for. It must be extractable.
+ * @returns {Promise<string>} A promise that resolves to the SHA-256 fingerprint in hexadecimal format.
+ */
+export async function calculateKeyFingerprint(key: CryptoKey): Promise<string> {
+	const exportedKey = await crypto.subtle.exportKey('raw', key);
+	const hashBuffer = await crypto.subtle.digest('SHA-256', exportedKey);
+	const hashArray = Array.from(new Uint8Array(hashBuffer), (b) => {
+		return b.toString(16).padStart(2, '0');
+	});
+
+	return hashArray.join('');
+}
