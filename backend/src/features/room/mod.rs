@@ -19,11 +19,9 @@ struct WebsocketOptions {
 
 async fn handler(ws: WebSocketUpgrade, options: Query<WebsocketOptions>) -> Response {
     trace!("handling WebSocket upgrade request");
-
-    let token = &options.token;
     
 
-    ws.on_upgrade(handle_socket);
+    ws.on_upgrade(handle_socket)
 }
 
 async fn handle_socket(mut socket: WebSocket) {
