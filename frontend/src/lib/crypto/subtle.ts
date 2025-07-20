@@ -8,7 +8,7 @@ export async function generatePublicationKeypair(): Promise<CryptoKeyPair> {
 			publicExponent: new Uint8Array([0x01, 0x00, 0x01]), // 65537,
 			hash: 'SHA-512'
 		} satisfies RsaHashedKeyGenParams,
-		false,
+		true,
 		['encrypt', 'decrypt']
 	);
 }
@@ -37,6 +37,42 @@ export async function decryptPublicationMessagesRound(
 		hybridDecrypt(encryptedMessage, privateKey)
 	);
 	return (await Promise.all(decryptionTasks)).filter((result) => result !== null);
+}
+
+/**
+ * Calculates the SHA-256 fingerprint of a CryptoKey.
+ *
+ * This function exports the key as a raw binary format, computes its SHA-256 hash,
+ * and returns the hash as a hexadecimal string.
+ *
+ * @param {CryptoKey} key - The CryptoKey to calculate the fingerprint for. It must be public and extractable.
+ * @returns {Promise<string>} A promise that resolves to the SHA-256 fingerprint in hexadecimal format.
+ */
+export async function calculateKeyFingerprint(key: CryptoKey): Promise<string> {
+	if (key.type !== 'public') {
+		throw new Error('Key must be a public key to calculate its fingerprint');
+	}
+
+	const exportedKey = await crypto.subtle.exportKey('raw', key);
+	const hashBuffer = await crypto.subtle.digest('SHA-256', exportedKey);
+	const hashArray = Array.from(new Uint8Array(hashBuffer), (b) => {
+		return b.toString(16).padStart(2, '0');
+	});
+
+	return hashArray.join('');
+}
+
+export async function decryptAuthenticationChallenge(
+	challenge: Uint8Array,
+	privateKey: CryptoKey
+): Promise<string> {
+	const decryptedBuffer = await crypto.subtle.decrypt(
+		{ name: 'RSA-OAEP' },
+		privateKey,
+		challenge
+	);
+
+	return new TextDecoder().decode(decryptedBuffer);
 }
 
 /** Generates a 256-bit symmetric key for AES-GCM encryption.
