@@ -14,3 +14,9 @@ pub struct JoinRoomResponse {
     pub session_token: String,
     pub connection_ticket: String,
 }
+
+pub struct NewSession<'a> {
+    pub token: &'a str,
+    pub user_agent: Option<&'a str>,
+    pub ip_address: Option<std::net::IpAddr>,
+}

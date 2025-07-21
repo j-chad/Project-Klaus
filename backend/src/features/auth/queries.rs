@@ -1,5 +1,7 @@
-use super::models::Room;
+use super::models::{Room, Session};
+use crate::features::auth::schemas::NewSession;
 use sqlx::PgPool;
+use sqlx::types::ipnet::IpNet;
 use std::net::IpAddr;
 
 pub async fn get_room_by_join_code(pool: &PgPool, join_code: &str) -> Result<Room, sqlx::Error> {
@@ -16,44 +18,54 @@ pub async fn get_room_by_join_code(pool: &PgPool, join_code: &str) -> Result<Roo
     .await
 }
 
-pub async fn new_room_member(
+pub async fn new_room_member_and_session(
     pool: &PgPool,
     room_id: uuid::Uuid,
     fingerprint: &str,
     public_key: &[u8],
     is_owner: bool,
-) -> Result<uuid::Uuid, sqlx::Error> {
+    session: NewSession<'_>,
+) -> Result<(), sqlx::Error> {
     sqlx::query!(
         r#"
-        INSERT INTO room_member (room_id, fingerprint, public_key, is_owner)
-        VALUES ($1, $2, $3, $4) RETURNING id;
+        WITH new_member AS (
+            INSERT INTO room_member (room_id, fingerprint, public_key, is_owner)
+            VALUES ($1, $2, $3, $4) RETURNING id
+        )
+        INSERT INTO session (member_id, token, user_agent, ip_address)
+        SELECT new_member.id, $5, $6, $7 FROM new_member
         "#,
         room_id,
         fingerprint,
         public_key,
-        is_owner
+        is_owner,
+        session.token,
+        session.user_agent,
+        session.ip_address.map(IpNet::from)
     )
-    .fetch_one(pool)
-    .await
-    .map(|row| row.id)
+    .execute(pool)
+    .await?;
+
+    Ok(())
 }
 
 pub async fn new_session(
     pool: &PgPool,
     member_id: uuid::Uuid,
-    token: &str,
-    user_agent: Option<&str>,
-    ip_address: Option<IpAddr>,
-) -> Result<uuid::Uuid, sqlx::Error> {
+    session: NewSession<'_>,
+) -> Result<(), sqlx::Error> {
     sqlx::query!(
         r#"
-        INSERT INTO session (room_id, fingerprint)
-        VALUES ($1, $2) RETURNING id;
+        INSERT INTO session (member_id, token, user_agent, ip_address)
+        VALUES ($1, $2, $3, $4);
         "#,
-        room_id,
-        fingerprint
+        member_id,
+        session.token,
+        session.user_agent,
+        session.ip_address.map(IpNet::from)
     )
-    .fetch_one(pool)
-    .await
-    .map(|row| row.id)
+    .execute(pool)
+    .await?;
+
+    Ok(())
 }
