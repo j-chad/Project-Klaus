@@ -5,7 +5,7 @@ edition = "2024"
 
 [dependencies]
 axum = { version = "0.8.4", features = ["macros", "ws"] }
-sqlx = { version = "0.8.6", features = ["sqlite", "runtime-tokio"] }
+sqlx = { version = "0.8.6", features = ["postgres", "runtime-tokio", "chrono"] }
 tokio = { version = "1.46.1", features = ["full"] }
 tower-http = { version = "0.6.6", features = ["trace"] }
 anyhow = "1.0.98"
@@ -14,5 +14,13 @@ serde = { version = "1.0.219", features = ["derive"] }
 config = "0.15.13"
 tracing-subscriber = { version = "0.3.19", features = ["json", "env-filter"] }
 sysinfo = "0.36.1"
+chrono = "0.4.41"
+rand = "0.9.1"
+validator = { version = "0.20.0", features = ["derive"] }
 
 
+[profile.dev.package.sqlx-macros]
+opt-level = 3
+
+[lints.clippy]
+pedantic = "warn"

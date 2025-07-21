@@ -38,7 +38,7 @@ pub struct Settings {
     pub env: AppEnv,
     pub app: AppSettings,
     pub logging: LoggingSettings,
-    pub sqlite: SQLiteSettings,
+    pub postgresql: PostgreSQLSettings,
 }
 
 #[derive(Debug, Deserialize, Clone)]
@@ -48,7 +48,7 @@ pub struct AppSettings {
 }
 
 #[derive(Debug, Deserialize, Clone)]
-pub struct SQLiteSettings {
+pub struct PostgreSQLSettings {
     pub url: String,
     pub max_connections: u32,
     pub lazy: bool,
@@ -73,7 +73,7 @@ impl Settings {
             AppEnv::Stage => "stage.toml",
             AppEnv::Production => "production.toml",
         }
-            .to_string()
+        .to_string()
     }
 
     fn get_config(environment: Option<AppEnv>) -> Result<Config, config::ConfigError> {
