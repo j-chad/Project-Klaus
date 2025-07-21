@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "\n        SELECT id, name, join_code, created_at, updated_at, max_members, started_at\n        FROM room\n        WHERE join_code = $1\n        ",
+  "query": "\n        SELECT id, name, join_code, created_at, updated_at, max_members, started_at\n        FROM room\n        WHERE deleted_at IS NULL AND join_code = $1\n        ",
   "describe": {
     "columns": [
       {
@@ -54,5 +54,5 @@
       true
     ]
   },
-  "hash": "7557f0d6350db9379d70c2cc54c02e588fa9dcf4007dc9f620043275ccabd5a4"
+  "hash": "d419344e7ce310a49da44f461d693576d4f215cfdedebc8ba64265002e9824d0"
 }
