@@ -56,6 +56,10 @@ pub async fn new_session(
 ) -> Result<(), sqlx::Error> {
     sqlx::query!(
         r#"
+        WITH deleted AS (
+            DELETE FROM session
+            WHERE member_id = $1
+        )
         INSERT INTO session (member_id, token, user_agent, ip_address)
         VALUES ($1, $2, $3, $4);
         "#,
