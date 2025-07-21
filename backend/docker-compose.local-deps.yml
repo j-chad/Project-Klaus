@@ -4,7 +4,7 @@ volumes:
   klaus-postgres-data:
 services:
   postgres:
-    image: postgres:latest
+    image: postgres:17
     restart: unless-stopped
     container_name: klaus-postgres
     environment:

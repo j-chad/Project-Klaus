@@ -19,31 +19,23 @@ pub async fn get_room_by_join_code(pool: &PgPool, join_code: &str) -> Result<Roo
     .await
 }
 
-/// Creates a new room member and session in a single transaction.
-pub async fn new_room_member_and_session(
+/// Creates a new room member.
+pub async fn new_room_member(
     pool: &PgPool,
     room_id: uuid::Uuid,
     fingerprint: &str,
     public_key: &[u8],
     is_owner: bool,
-    session: NewSession<'_>,
 ) -> Result<(), sqlx::Error> {
     sqlx::query!(
         r#"
-        WITH new_member AS (
-            INSERT INTO room_member (room_id, fingerprint, public_key, is_owner)
-            VALUES ($1, $2, $3, $4) RETURNING id
-        )
-        INSERT INTO session (member_id, token, user_agent, ip_address)
-        SELECT new_member.id, $5, $6, $7 FROM new_member
+        INSERT INTO room_member (room_id, fingerprint, public_key, is_owner)
+        VALUES ($1, $2, $3, $4)
         "#,
         room_id,
         fingerprint,
         public_key,
         is_owner,
-        session.token,
-        session.user_agent,
-        session.ip_address.map(IpNet::from)
     )
     .execute(pool)
     .await?;
@@ -51,25 +43,35 @@ pub async fn new_room_member_and_session(
     Ok(())
 }
 
-/// Creates a new session for a member, deleting any existing sessions for that member.
-pub async fn new_session(
+/// Creates a new ephemeral & session token for a member.
+///
+/// This function also deletes any pre-existing session tokens for the member.
+pub async fn new_token_pair(
     pool: &PgPool,
     member_id: uuid::Uuid,
-    session: NewSession<'_>,
+    session_token: &str,
+    ephemeral_token: &str,
+    user_agent: Option<String>,
+    ip_address: Option<IpAddr>,
 ) -> Result<(), sqlx::Error> {
     sqlx::query!(
         r#"
         WITH deleted AS (
-            DELETE FROM session
+            DELETE FROM tokens
             WHERE member_id = $1
+        ),
+        session_token AS (
+            INSERT INTO tokens (member_id, type, token, expires_at, user_agent, ip_address)
+            VALUES ($1, 'session', $2, NOW() + INTERVAL '1 hour', $4, $5)
         )
-        INSERT INTO session (member_id, token, user_agent, ip_address)
-        VALUES ($1, $2, $3, $4);
+        INSERT INTO tokens (member_id, type, token, expires_at, user_agent, ip_address)
+            VALUES ($1, 'ephemeral', $3, NOW() + INTERVAL '1 minute', $4, $5)
         "#,
         member_id,
-        session.token,
-        session.user_agent,
-        session.ip_address.map(IpNet::from)
+        session_token,
+        ephemeral_token,
+        user_agent,
+        ip_address.map(IpNet::from)
     )
     .execute(pool)
     .await?;

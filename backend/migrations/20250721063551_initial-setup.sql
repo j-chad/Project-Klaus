@@ -35,16 +35,23 @@ CREATE TABLE room_member (
     joined_at   TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
-CREATE TABLE session (
+CREATE TYPE token_type AS ENUM (
+    'session', -- long-lived session token
+    'ephemeral', -- short-lived single use token for ephemeral actions
+    'challenge' -- short-lived token for challenge verification
+);
+
+CREATE TABLE tokens (
     id          UUID PRIMARY KEY         DEFAULT gen_random_uuid(),
     member_id  UUID    NOT NULL REFERENCES room_member(id) ON DELETE CASCADE,
 
     token       TEXT UNIQUE NOT NULL,
+    type        token_type NOT NULL,
 
     user_agent  TEXT,
     ip_address  INET,
 
     created_at  TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL,
-    expires_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT (CURRENT_TIMESTAMP + INTERVAL '1 hour') NOT NULL,
+    expires_at TIMESTAMP WITH TIME ZONE NOT NULL,
     last_seen_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL
 );

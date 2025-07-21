@@ -10,9 +10,16 @@ pub struct Room {
     pub started_at: Option<chrono::DateTime<chrono::Utc>>,
 }
 
-pub struct Session {
+pub enum TokenType {
+    Session,
+    Ephemeral,
+    Challenge,
+}
+
+pub struct Token {
     pub id: uuid::Uuid,
     pub member_id: uuid::Uuid,
+    pub token_type: TokenType,
     pub created_at: chrono::DateTime<chrono::Utc>,
     pub expires_at: chrono::DateTime<chrono::Utc>,
     pub last_seen_at: chrono::DateTime<chrono::Utc>,
