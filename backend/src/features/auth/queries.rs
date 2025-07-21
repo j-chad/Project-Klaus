@@ -4,6 +4,7 @@ use sqlx::PgPool;
 use sqlx::types::ipnet::IpNet;
 use std::net::IpAddr;
 
+/// Fetches a room by its ID.
 pub async fn get_room_by_join_code(pool: &PgPool, join_code: &str) -> Result<Room, sqlx::Error> {
     sqlx::query_as!(
         Room,
@@ -18,6 +19,7 @@ pub async fn get_room_by_join_code(pool: &PgPool, join_code: &str) -> Result<Roo
     .await
 }
 
+/// Creates a new room member and session in a single transaction.
 pub async fn new_room_member_and_session(
     pool: &PgPool,
     room_id: uuid::Uuid,
@@ -49,6 +51,7 @@ pub async fn new_room_member_and_session(
     Ok(())
 }
 
+/// Creates a new session for a member, deleting any existing sessions for that member.
 pub async fn new_session(
     pool: &PgPool,
     member_id: uuid::Uuid,
