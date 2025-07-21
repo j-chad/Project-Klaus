@@ -5,7 +5,7 @@ edition = "2024"
 
 [dependencies]
 axum = { version = "0.8.4", features = ["macros", "ws"] }
-sqlx = { version = "0.8.6", features = ["postgres", "runtime-tokio", "chrono"] }
+sqlx = { version = "0.8.6", features = ["postgres", "runtime-tokio", "chrono", 'uuid'] }
 tokio = { version = "1.46.1", features = ["full"] }
 tower-http = { version = "0.6.6", features = ["trace"] }
 anyhow = "1.0.98"
@@ -17,6 +17,7 @@ sysinfo = "0.36.1"
 chrono = "0.4.41"
 rand = "0.9.1"
 validator = { version = "0.20.0", features = ["derive"] }
+uuid = { version = "1.17.0", features = ["v4"] }
 
 
 [profile.dev.package.sqlx-macros]

@@ -1,14 +1,14 @@
 use crate::config;
-use sqlx::SqlitePool;
+use sqlx::PgPool;
 use std::sync::Arc;
 
 pub struct AppState {
-    pub db: SqlitePool,
+    pub db: PgPool,
     pub config: config::Settings,
 }
 
 impl AppState {
-    pub fn new(db: SqlitePool, config: config::Settings) -> Self {
+    pub fn new(db: PgPool, config: config::Settings) -> Self {
         AppState { db, config }
     }
 }
