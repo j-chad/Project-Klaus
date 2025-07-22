@@ -39,6 +39,7 @@ pub struct Settings {
     pub app: AppSettings,
     pub logging: LoggingSettings,
     pub postgresql: PostgreSQLSettings,
+    pub auth: AuthSettings,
 }
 
 #[derive(Debug, Deserialize, Clone)]
@@ -58,6 +59,12 @@ pub struct PostgreSQLSettings {
 pub struct LoggingSettings {
     pub level: String,
     pub format: LogFormat,
+}
+
+#[derive(Debug, Deserialize, Clone)]
+pub struct AuthSettings {
+    pub session_cookie_name: String,
+    pub session_cookie_secure: bool,
 }
 
 #[derive(Debug, Deserialize)]

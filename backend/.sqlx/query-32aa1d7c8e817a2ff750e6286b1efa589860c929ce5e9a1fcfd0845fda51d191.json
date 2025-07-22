@@ -1,0 +1,16 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n        INSERT INTO room_member (room_id, fingerprint, public_key, is_owner)\n        VALUES ($1, $2, $3, false)\n        ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Text",
+        "Bytea"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "32aa1d7c8e817a2ff750e6286b1efa589860c929ce5e9a1fcfd0845fda51d191"
+}

@@ -1,7 +1,8 @@
-use super::models::{Room, Token};
+use super::models::{Room, TokenType};
 use sqlx::PgPool;
 use sqlx::types::ipnet::IpNet;
 use std::net::IpAddr;
+use uuid::Uuid;
 
 /// Fetches a room by its ID.
 pub async fn get_room_by_join_code(
@@ -24,35 +25,50 @@ pub async fn get_room_by_join_code(
 /// Creates a new room member.
 pub async fn new_room_member(
     pool: &PgPool,
-    room_id: uuid::Uuid,
+    room_id: Uuid,
+    name: &str,
     fingerprint: &str,
     public_key: &[u8],
-    is_owner: bool,
-) -> Result<(), sqlx::Error> {
+) -> Result<Uuid, sqlx::Error> {
     sqlx::query!(
         r#"
-        INSERT INTO room_member (room_id, fingerprint, public_key, is_owner)
+        INSERT INTO room_member (room_id, fingerprint, public_key, name)
         VALUES ($1, $2, $3, $4)
+        RETURNING id;
         "#,
         room_id,
         fingerprint,
         public_key,
-        is_owner,
+        name
     )
-    .execute(pool)
-    .await?;
-
-    Ok(())
+    .fetch_one(pool)
+    .await
+    .map(|row| row.id)
 }
 
-/// Creates a new ephemeral & session token for a member.
+pub async fn get_current_member_count(pool: &PgPool, room_id: Uuid) -> Result<u32, sqlx::Error> {
+    sqlx::query!(
+        r#"
+        SELECT COUNT(*) AS count
+        FROM room_member
+        WHERE room_id = $1
+        "#,
+        room_id
+    )
+    .fetch_one(pool)
+    .await
+    .map(|row| row.count.unwrap_or(0) as u32)
+}
+
+/// Creates a new token for a member.
 ///
-/// This function also deletes any pre-existing session tokens for the member.
-pub async fn new_token_pair(
+/// This function also deletes any pre-existing tokens of the same type for the member.
+pub async fn new_session_token(
     pool: &PgPool,
-    member_id: uuid::Uuid,
-    session_token: &str,
-    ephemeral_token: &str,
+    member_id: Uuid,
+    token_type: &TokenType,
+    token: &str,
+    expires_at: chrono::DateTime<chrono::Utc>,
     user_agent: Option<String>,
     ip_address: Option<IpAddr>,
 ) -> Result<(), sqlx::Error> {
@@ -60,18 +76,19 @@ pub async fn new_token_pair(
         r#"
         WITH deleted AS (
             DELETE FROM tokens
-            WHERE member_id = $1
-        ),
-        session_token AS (
-            INSERT INTO tokens (member_id, type, token, expires_at, user_agent, ip_address)
-            VALUES ($1, 'session', $2, NOW() + INTERVAL '1 hour', $4, $5)
+            WHERE member_id = $1 AND type = $2
         )
         INSERT INTO tokens (member_id, type, token, expires_at, user_agent, ip_address)
-            VALUES ($1, 'ephemeral', $3, NOW() + INTERVAL '1 minute', $4, $5)
+        VALUES ($1, $2, $3, $4, $5, $6)
         "#,
         member_id,
-        session_token,
-        ephemeral_token,
+        match token_type {
+            TokenType::Session => "session",
+            TokenType::Ephemeral => "ephemeral",
+            TokenType::Challenge => "challenge",
+        },
+        token,
+        expires_at,
         user_agent,
         ip_address.map(IpNet::from)
     )

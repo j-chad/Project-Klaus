@@ -11,6 +11,5 @@ pub struct JoinRoomRequest {
 
 #[derive(Serialize)]
 pub struct JoinRoomResponse {
-    pub session_token: String,
     pub connection_ticket: String,
 }

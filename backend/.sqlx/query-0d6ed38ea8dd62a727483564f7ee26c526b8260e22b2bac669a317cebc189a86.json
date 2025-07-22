@@ -1,0 +1,18 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n        WITH deleted AS (\n            DELETE FROM tokens\n            WHERE member_id = $1\n        ),\n        session_token AS (\n            INSERT INTO tokens (member_id, type, token, expires_at, user_agent, ip_address)\n            VALUES ($1, 'session', $2, NOW() + INTERVAL '1 hour', $4, $5)\n        )\n        INSERT INTO tokens (member_id, type, token, expires_at, user_agent, ip_address)\n            VALUES ($1, 'ephemeral', $3, NOW() + INTERVAL '1 minute', $4, $5)\n        ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Text",
+        "Text",
+        "Text",
+        "Inet"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "0d6ed38ea8dd62a727483564f7ee26c526b8260e22b2bac669a317cebc189a86"
+}

@@ -1,25 +1,42 @@
-use super::queries;
 use super::schemas::{JoinRoomRequest, JoinRoomResponse};
+use super::{service, utils};
 use crate::error::AppError;
 use crate::state::SharedState;
 use axum::Json;
-use axum::extract::State;
+use axum::extract::{ConnectInfo, State};
+use axum::http::{HeaderMap, StatusCode};
+use axum::response::IntoResponse;
+use axum_extra::extract::CookieJar;
+use std::net::SocketAddr;
+use validator::Validate;
 
 pub async fn join_room(
     State(state): State<SharedState>,
     Json(body): Json<JoinRoomRequest>,
-) -> Result<Json<JoinRoomResponse>, AppError> {
-    let user = service::register_user(&state.db, &body);
-    let room = queries::get_room_by_join_code(&state.db, &payload.room_id).await?;
+    ConnectInfo(addr): ConnectInfo<SocketAddr>,
+    headers: HeaderMap,
+    cookies: CookieJar,
+) -> Result<impl IntoResponse, AppError> {
+    body.validate()?;
 
-    if let Some(max) = room.max_members {
-        let current_members = queries::get_current_member_count(&state.db, room.id).await?;
-        if current_members >= max {
-            return Err(AppError::new(
-                "ROOM_FULL",
-                "The room is full. Please try another room.",
-                axum::http::StatusCode::FORBIDDEN,
-            ));
-        }
-    }
+    let user_id = service::join_room(&state.db, &body).await?;
+
+    let ip_address = addr.ip();
+    let user_agent = headers
+        .get("User-Agent")
+        .and_then(|h| h.to_str().ok())
+        .map(String::from);
+
+    let session_token =
+        service::create_session_token(&state.db, user_id, user_agent, Some(ip_address)).await?;
+    let session_cookie = utils::new_session_cookie(&state.config.auth, &session_token);
+
+    let ephemeral_token =
+        service::create_ephemeral_token(&state.db, user_id, user_agent, Some(ip_address)).await?;
+
+    Ok((
+        StatusCode::CREATED,
+        cookies.add(session_cookie),
+        Json(JoinRoomResponse {}),
+    ))
 }

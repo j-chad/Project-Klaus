@@ -28,6 +28,7 @@ CREATE TABLE room_member (
     id          UUID PRIMARY KEY         DEFAULT gen_random_uuid(),
     room_id     UUID    NOT NULL REFERENCES room(id) ON DELETE CASCADE,
 
+    name        TEXT NOT NULL,
     fingerprint TEXT UNIQUE NOT NULL,
     public_key  BYTEA NOT NULL,
     is_owner    BOOLEAN NOT NULL         DEFAULT FALSE,

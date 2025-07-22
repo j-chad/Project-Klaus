@@ -5,6 +5,8 @@ use axum::http::StatusCode;
 pub enum AuthError {
     RoomNotFound,
     InvalidPublicKey,
+    RoomFull,
+    TokenGenerationFailed,
 }
 
 impl From<AuthError> for AppError {
@@ -19,6 +21,16 @@ impl From<AuthError> for AppError {
                 "INVALID_PUBLIC_KEY",
                 "The provided public key is invalid or malformed.",
                 StatusCode::BAD_REQUEST,
+            ),
+            AuthError::RoomFull => AppError::new(
+                "ROOM_FULL",
+                "The room is full. Please try another room.",
+                StatusCode::FORBIDDEN,
+            ),
+            AuthError::TokenGenerationFailed => AppError::new(
+                "TOKEN_GENERATION_FAILED",
+                "Failed to generate a secure token. Please try again later.",
+                StatusCode::INTERNAL_SERVER_ERROR,
             ),
         }
     }
