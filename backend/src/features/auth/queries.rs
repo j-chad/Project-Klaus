@@ -13,7 +13,7 @@ pub async fn get_room_by_join_code(
         Room,
         r#"
         SELECT room.id, room.name, room.join_code, room.created_at, room.updated_at, room.max_members, room.started_at, (
-            CASE 
+            CASE
                 WHEN max_members IS NOT NULL THEN (
                     SELECT COUNT(*)
                     FROM room_member
@@ -71,12 +71,12 @@ pub async fn get_current_member_count(pool: &PgPool, room_id: Uuid) -> Result<i6
 /// Creates a new token for a member.
 ///
 /// This function also deletes any pre-existing tokens of the same type for the member.
-pub async fn new_session_token(
+pub async fn new_token(
     pool: &PgPool,
     member_id: Uuid,
     token_type: &TokenType,
     token: &str,
-    expires_at: chrono::DateTime<chrono::Utc>,
+    expires_at: &chrono::DateTime<chrono::Utc>,
     user_agent: Option<String>,
     ip_address: Option<IpAddr>,
 ) -> Result<(), sqlx::Error> {
@@ -90,11 +90,7 @@ pub async fn new_session_token(
         VALUES ($1, $2, $3, $4, $5, $6)
         "#,
         member_id,
-        match token_type {
-            TokenType::Session => "session",
-            TokenType::Ephemeral => "ephemeral",
-            TokenType::Challenge => "challenge",
-        },
+        token_type as &TokenType,
         token,
         expires_at,
         user_agent,

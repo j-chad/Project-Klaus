@@ -1,17 +1,20 @@
 use super::schemas::JoinRoomRequest;
 use crate::error::AppError;
 use crate::features::auth::errors::AuthError;
+use crate::features::auth::models::TokenType;
 use crate::features::auth::queries;
 use base64::{Engine, prelude::BASE64_STANDARD};
 use rand::TryRngCore;
 use rand::rngs::OsRng;
 use rsa::RsaPublicKey;
-use rsa::pkcs8::{DecodePublicKey, EncodePublicKey};
+use rsa::pkcs8::DecodePublicKey;
 use sha2::{Digest, Sha256};
-use sqlx::PgPool;
 use std::net::IpAddr;
 use tracing::error;
-use uuid::Uuid;
+
+static SESSION_TOKEN_DURATION: chrono::Duration = chrono::Duration::hours(1);
+static EPHEMERAL_TOKEN_DURATION: chrono::Duration = chrono::Duration::minutes(2);
+static CHALLENGE_TOKEN_DURATION: chrono::Duration = chrono::Duration::minutes(2);
 
 /// Creates a new room member and returns the user ID.
 pub async fn join_room(
@@ -48,7 +51,18 @@ pub async fn create_session_token(
     ip_address: Option<IpAddr>,
 ) -> Result<String, AppError> {
     let token = generate_secure_token()?;
-    queries::new_session_token(pool, member_id, &token, user_agent, ip_address).await?;
+    let expiration = chrono::Utc::now() + SESSION_TOKEN_DURATION;
+
+    queries::new_token(
+        pool,
+        member_id,
+        &TokenType::Session,
+        &token,
+        &expiration,
+        user_agent,
+        ip_address,
+    )
+    .await?;
     Ok(token)
 }
 
@@ -59,7 +73,40 @@ pub async fn create_ephemeral_token(
     ip_address: Option<IpAddr>,
 ) -> Result<String, AppError> {
     let token = generate_secure_token()?;
-    queries::new_ephemeral_token(pool, member_id, &token, user_agent, ip_address).await?;
+    let expiration = chrono::Utc::now() + EPHEMERAL_TOKEN_DURATION;
+
+    queries::new_token(
+        pool,
+        member_id,
+        &TokenType::Ephemeral,
+        &token,
+        &expiration,
+        user_agent,
+        ip_address,
+    )
+    .await?;
+    Ok(token)
+}
+
+pub async fn create_challenge_token(
+    pool: &sqlx::PgPool,
+    member_id: uuid::Uuid,
+    user_agent: Option<String>,
+    ip_address: Option<IpAddr>,
+) -> Result<String, AppError> {
+    let token = generate_secure_token()?;
+    let expiration = chrono::Utc::now() + CHALLENGE_TOKEN_DURATION;
+
+    queries::new_token(
+        pool,
+        member_id,
+        &TokenType::Challenge,
+        &token,
+        &expiration,
+        user_agent,
+        ip_address,
+    )
+    .await?;
     Ok(token)
 }
 

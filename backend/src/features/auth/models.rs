@@ -11,6 +11,8 @@ pub struct Room {
     pub started_at: Option<chrono::DateTime<chrono::Utc>>,
 }
 
+#[derive(sqlx::Type)]
+#[sqlx(type_name = "token_type", rename_all = "lowercase")]
 pub enum TokenType {
     Session,
     Ephemeral,
