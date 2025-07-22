@@ -12,7 +12,15 @@ pub async fn get_room_by_join_code(
     sqlx::query_as!(
         Room,
         r#"
-        SELECT id, name, join_code, created_at, updated_at, max_members, started_at
+        SELECT room.id, room.name, room.join_code, room.created_at, room.updated_at, room.max_members, room.started_at, (
+            CASE 
+                WHEN max_members IS NOT NULL THEN (
+                    SELECT COUNT(*)
+                    FROM room_member
+                    WHERE room_member.room_id = room.id
+                )
+            END
+        ) AS "member_count"
         FROM room
         WHERE deleted_at IS NULL AND join_code = $1
         "#,
@@ -46,7 +54,7 @@ pub async fn new_room_member(
     .map(|row| row.id)
 }
 
-pub async fn get_current_member_count(pool: &PgPool, room_id: Uuid) -> Result<u32, sqlx::Error> {
+pub async fn get_current_member_count(pool: &PgPool, room_id: Uuid) -> Result<i64, sqlx::Error> {
     sqlx::query!(
         r#"
         SELECT COUNT(*) AS count
@@ -57,7 +65,7 @@ pub async fn get_current_member_count(pool: &PgPool, room_id: Uuid) -> Result<u3
     )
     .fetch_one(pool)
     .await
-    .map(|row| row.count.unwrap_or(0) as u32)
+    .map(|row| row.count.unwrap_or(0))
 }
 
 /// Creates a new token for a member.

@@ -23,8 +23,13 @@ pub async fn join_room(
         .ok_or(AuthError::RoomNotFound)?;
 
     if let Some(max_members) = room.max_members {
-        let current_members = queries::get_current_member_count(pool, room.id).await?;
-        if current_members >= max_members as u32 {
+        let current_members = if let Some(count) = room.member_count {
+            count
+        } else {
+            queries::get_current_member_count(pool, room.id).await?
+        };
+
+        if current_members >= max_members as i64 {
             return Err(AuthError::RoomFull.into());
         }
     }
