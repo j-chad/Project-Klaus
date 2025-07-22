@@ -4,6 +4,7 @@ use axum::http::StatusCode;
 #[derive(Debug)]
 pub enum AuthError {
     RoomNotFound,
+    InvalidPublicKey,
 }
 
 impl From<AuthError> for AppError {
@@ -13,6 +14,11 @@ impl From<AuthError> for AppError {
                 "ROOM_NOT_FOUND",
                 "The specified room does not exist.",
                 StatusCode::NOT_FOUND,
+            ),
+            AuthError::InvalidPublicKey => AppError::new(
+                "INVALID_PUBLIC_KEY",
+                "The provided public key is invalid or malformed.",
+                StatusCode::BAD_REQUEST,
             ),
         }
     }
