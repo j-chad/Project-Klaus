@@ -7,6 +7,7 @@ use std::sync::Arc;
 mod app;
 mod config;
 mod db;
+mod error;
 mod features;
 mod logging;
 mod state;
