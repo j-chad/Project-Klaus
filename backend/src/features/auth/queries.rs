@@ -1,11 +1,13 @@
-use super::models::{Room, Session};
-use crate::features::auth::schemas::NewSession;
+use super::models::{Room, Token};
 use sqlx::PgPool;
 use sqlx::types::ipnet::IpNet;
 use std::net::IpAddr;
 
 /// Fetches a room by its ID.
-pub async fn get_room_by_join_code(pool: &PgPool, join_code: &str) -> Result<Room, sqlx::Error> {
+pub async fn get_room_by_join_code(
+    pool: &PgPool,
+    join_code: &str,
+) -> Result<Option<Room>, sqlx::Error> {
     sqlx::query_as!(
         Room,
         r#"
@@ -15,7 +17,7 @@ pub async fn get_room_by_join_code(pool: &PgPool, join_code: &str) -> Result<Roo
         "#,
         join_code
     )
-    .fetch_one(pool)
+    .fetch_optional(pool)
     .await
 }
 
