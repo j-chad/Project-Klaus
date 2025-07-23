@@ -102,21 +102,19 @@ pub async fn new_token(
     Ok(())
 }
 
-pub async fn get_token_and_update_access_time(
+pub async fn get_session_token_and_update_access_time(
     pool: &PgPool,
     token: &str,
-    token_type: &TokenType,
 ) -> Result<Option<Token>, sqlx::Error> {
     sqlx::query_as!(
         Token,
         r#"
         UPDATE tokens
         SET last_seen_at = NOW()
-        WHERE token = $1 AND type = $2
+        WHERE token = $1 AND type = 'session'
         RETURNING id, member_id, type AS "token_type: TokenType", created_at, expires_at, last_seen_at, user_agent, ip_address
         "#,
-        token,
-        token_type as &TokenType
+        token
     )
     .fetch_optional(pool)
     .await
@@ -151,4 +149,27 @@ pub async fn get_member_by_fingerprint(
     .fetch_optional(pool)
     .await
     .map(|row| row.map(|r| (r.id, r.public_key)))
+}
+
+pub async fn get_and_delete_challenge_token_for_fingerprint(
+    pool: &PgPool,
+    fingerprint: &str,
+    token: &str,
+) -> Result<Option<Token>, sqlx::Error> {
+    sqlx::query_as!(
+        Token,
+        r#"
+        DELETE FROM tokens
+        USING room_member
+        WHERE member_id = room_member.id
+        AND room_member.fingerprint = $1
+        AND tokens.type = 'challenge' 
+        AND tokens.token = $2
+        RETURNING tokens.id, tokens.member_id, tokens.type AS "token_type: TokenType", tokens.created_at, tokens.expires_at, tokens.last_seen_at, tokens.user_agent, tokens.ip_address
+        "#,
+        fingerprint,
+        token
+    )
+    .fetch_optional(pool)
+    .await
 }

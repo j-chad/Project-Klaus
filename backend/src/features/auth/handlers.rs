@@ -1,4 +1,7 @@
-use super::schemas::{CreateChallengeTokenRequest, EphemeralTokenResponse, JoinRoomRequest};
+use super::schemas::{
+    ChallengeVerificationRequest, CreateChallengeTokenRequest, EphemeralTokenResponse,
+    JoinRoomRequest,
+};
 use super::{middleware::Session, service};
 use crate::error::AppError;
 use crate::features::auth::utils::new_session_cookie;
@@ -39,7 +42,7 @@ pub async fn join_room(
     ))
 }
 
-pub async fn create_challenge_token(
+pub async fn create_challenge(
     State(state): State<SharedState>,
     ConnectInfo(addr): ConnectInfo<SocketAddr>,
     headers: HeaderMap,
@@ -53,6 +56,33 @@ pub async fn create_challenge_token(
             .await?;
 
     Ok((StatusCode::CREATED, Json(challenge_token)))
+}
+
+pub async fn verify_challenge(
+    State(state): State<SharedState>,
+    ConnectInfo(addr): ConnectInfo<SocketAddr>,
+    headers: HeaderMap,
+    cookies: CookieJar,
+    Json(request): Json<ChallengeVerificationRequest>,
+) -> Result<impl IntoResponse, AppError> {
+    let user_agent = headers.get("User-Agent").and_then(|h| h.to_str().ok());
+    let ip_address = Some(addr.ip());
+
+    let session_token = service::exchange_challenge_for_session(
+        &state.db,
+        &request.token,
+        &request.fingerprint,
+        user_agent,
+        ip_address,
+    )
+    .await?;
+
+    let session_cookie = new_session_cookie(&state.config.auth, &session_token);
+    Ok((
+        StatusCode::CREATED,
+        cookies.add(session_cookie),
+        Json(session_token),
+    ))
 }
 
 pub async fn create_ephemeral_token(

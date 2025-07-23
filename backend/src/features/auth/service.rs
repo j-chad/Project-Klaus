@@ -107,6 +107,27 @@ pub async fn create_challenge_token(
     Ok(token)
 }
 
+pub async fn exchange_challenge_for_session(
+    pool: &sqlx::PgPool,
+    token: &str,
+    fingerprint: &str,
+    user_agent: Option<&str>,
+    ip_address: Option<IpAddr>,
+) -> Result<String, AppError> {
+    let challenge_token =
+        queries::get_and_delete_challenge_token_for_fingerprint(pool, fingerprint, token)
+            .await?
+            .ok_or(AuthError::InvalidToken)?;
+
+    if challenge_token.expires_at < chrono::Utc::now() {
+        return Err(AuthError::InvalidToken.into());
+    }
+
+    let session_token =
+        create_session_token(pool, challenge_token.member_id, user_agent, ip_address).await?;
+    Ok(session_token)
+}
+
 pub async fn logout(pool: &sqlx::PgPool, member_id: uuid::Uuid) -> Result<(), AppError> {
     queries::delete_all_tokens(pool, member_id).await?;
     Ok(())

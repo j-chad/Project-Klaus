@@ -11,6 +11,7 @@ pub enum AuthError {
     MissingToken,
     MemberNotFound,
     TokenEncryptionFailed,
+    InvalidToken,
 }
 
 impl From<AuthError> for AppError {
@@ -55,6 +56,11 @@ impl From<AuthError> for AppError {
                 "TOKEN_ENCRYPTION_FAILED",
                 "Failed to encrypt the token. Please try again later.",
                 StatusCode::INTERNAL_SERVER_ERROR,
+            ),
+            AuthError::InvalidToken => AppError::new(
+                "INVALID_TOKEN",
+                "The provided token is invalid or has expired.",
+                StatusCode::BAD_REQUEST,
             ),
         }
     }

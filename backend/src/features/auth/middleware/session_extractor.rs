@@ -42,11 +42,10 @@ impl FromRequestParts<SharedState> for Session {
         let token = extract_token(parts, state)?;
 
         // Get session from token
-        let session =
-            queries::get_token_and_update_access_time(&state.db, &token, &TokenType::Session)
-                .await?
-                .map(Self)
-                .ok_or_else(|| AppError::from(AuthError::ExpiredToken))?;
+        let session = queries::get_session_token_and_update_access_time(&state.db, &token)
+            .await?
+            .map(Self)
+            .ok_or_else(|| AppError::from(AuthError::ExpiredToken))?;
 
         // Check if session is expired
         if session.0.expires_at < chrono::Utc::now() {
