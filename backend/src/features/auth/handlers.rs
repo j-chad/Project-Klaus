@@ -1,6 +1,7 @@
 use super::schemas::{JoinRoomRequest, JoinRoomResponse};
-use super::{service, utils};
+use super::{middleware::Session, service, utils};
 use crate::error::AppError;
+use crate::features::auth::utils::new_session_cookie;
 use crate::state::SharedState;
 use axum::extract::{ConnectInfo, State};
 use axum::http::{HeaderMap, StatusCode};
@@ -36,4 +37,15 @@ pub async fn join_room(
         cookies.add(session_cookie),
         Json(JoinRoomResponse { connection_ticket }),
     ))
+}
+
+pub async fn logout(
+    State(state): State<SharedState>,
+    Session(session): Session,
+    cookies: CookieJar,
+) -> Result<impl IntoResponse, AppError> {
+    service::logout(&state.db, session.member_id).await?;
+
+    let removal_cookie = new_session_cookie(&state.config.auth, "");
+    Ok((StatusCode::NO_CONTENT, cookies.remove(removal_cookie)))
 }

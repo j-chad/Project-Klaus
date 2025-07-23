@@ -121,3 +121,17 @@ pub async fn get_token_and_update_access_time(
     .fetch_optional(pool)
     .await
 }
+
+pub async fn delete_all_tokens(pool: &PgPool, member_id: Uuid) -> Result<(), sqlx::Error> {
+    sqlx::query!(
+        r#"
+        DELETE FROM tokens
+        WHERE member_id = $1
+        "#,
+        member_id
+    )
+    .execute(pool)
+    .await?;
+
+    Ok(())
+}

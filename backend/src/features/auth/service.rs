@@ -110,6 +110,11 @@ pub async fn create_challenge_token(
     Ok(token)
 }
 
+pub async fn logout(pool: &sqlx::PgPool, member_id: uuid::Uuid) -> Result<(), AppError> {
+    queries::delete_all_tokens(pool, member_id).await?;
+    Ok(())
+}
+
 fn generate_secure_token() -> Result<String, AuthError> {
     let mut token = vec![0u8; 32];
     OsRng.try_fill_bytes(&mut token).or_else(|err| {
