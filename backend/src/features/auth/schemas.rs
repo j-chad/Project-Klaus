@@ -14,6 +14,11 @@ pub struct CreateChallengeTokenRequest {
     pub fingerprint: String,
 }
 
+#[derive(Serialize)]
+pub struct ChallengeResponse {
+    pub challenge: String,
+}
+
 #[derive(Deserialize)]
 pub struct ChallengeVerificationRequest {
     pub token: String,

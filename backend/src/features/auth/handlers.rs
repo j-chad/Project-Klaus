@@ -1,6 +1,6 @@
 use super::schemas::{
-    ChallengeVerificationRequest, CreateChallengeTokenRequest, EphemeralTokenResponse,
-    JoinRoomRequest,
+    ChallengeResponse, ChallengeVerificationRequest, CreateChallengeTokenRequest,
+    EphemeralTokenResponse, JoinRoomRequest,
 };
 use super::{middleware::Session, service};
 use crate::error::AppError;
@@ -55,7 +55,12 @@ pub async fn create_challenge(
         service::create_challenge_token(&state.db, &request.fingerprint, user_agent, ip_address)
             .await?;
 
-    Ok((StatusCode::CREATED, Json(challenge_token)))
+    Ok((
+        StatusCode::CREATED,
+        Json(ChallengeResponse {
+            challenge: challenge_token,
+        }),
+    ))
 }
 
 pub async fn verify_challenge(
