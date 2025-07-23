@@ -7,6 +7,8 @@ pub enum AuthError {
     InvalidPublicKey,
     RoomFull,
     TokenGenerationFailed,
+    ExpiredToken,
+    MissingToken,
 }
 
 impl From<AuthError> for AppError {
@@ -31,6 +33,16 @@ impl From<AuthError> for AppError {
                 "TOKEN_GENERATION_FAILED",
                 "Failed to generate a secure token. Please try again later.",
                 StatusCode::INTERNAL_SERVER_ERROR,
+            ),
+            AuthError::ExpiredToken => AppError::new(
+                "EXPIRED_TOKEN",
+                "The provided token has expired. Please log in again.",
+                StatusCode::UNAUTHORIZED,
+            ),
+            AuthError::MissingToken => AppError::new(
+                "MISSING_TOKEN",
+                "No authentication token provided. Please log in.",
+                StatusCode::UNAUTHORIZED,
             ),
         }
     }

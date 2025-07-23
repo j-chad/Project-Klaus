@@ -1,4 +1,4 @@
-use super::models::{Room, TokenType};
+use super::models::{Room, Token, TokenType};
 use sqlx::PgPool;
 use sqlx::types::ipnet::IpNet;
 use std::net::IpAddr;
@@ -100,4 +100,24 @@ pub async fn new_token(
     .await?;
 
     Ok(())
+}
+
+pub async fn get_token_and_update_access_time(
+    pool: &PgPool,
+    token: &str,
+    token_type: &TokenType,
+) -> Result<Option<Token>, sqlx::Error> {
+    sqlx::query_as!(
+        Token,
+        r#"
+        UPDATE tokens
+        SET last_seen_at = NOW()
+        WHERE token = $1 AND type = $2
+        RETURNING id, member_id, type AS "token_type: TokenType", created_at, expires_at, last_seen_at, user_agent, ip_address
+        "#,
+        token,
+        token_type as &TokenType
+    )
+    .fetch_optional(pool)
+    .await
 }
