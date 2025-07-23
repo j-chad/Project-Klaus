@@ -39,6 +39,15 @@ export async function decryptPublicationMessagesRound(
 	return (await Promise.all(decryptionTasks)).filter((result) => result !== null);
 }
 
+export async function exportPublicKey(key: CryptoKey): Promise<string> {
+	if (key.type !== 'public') {
+		throw new Error('Key must be a public key to export');
+	}
+
+	const exportedKey = await crypto.subtle.exportKey('spki', key);
+	return btoa(String.fromCharCode(...new Uint8Array(exportedKey)));
+}
+
 /**
  * Calculates the SHA-256 fingerprint of a CryptoKey.
  *
@@ -53,7 +62,7 @@ export async function calculateKeyFingerprint(key: CryptoKey): Promise<string> {
 		throw new Error('Key must be a public key to calculate its fingerprint');
 	}
 
-	const exportedKey = await crypto.subtle.exportKey('raw', key);
+	const exportedKey = await crypto.subtle.exportKey('spki', key);
 	const hashBuffer = await crypto.subtle.digest('SHA-256', exportedKey);
 	const hashArray = Array.from(new Uint8Array(hashBuffer), (b) => {
 		return b.toString(16).padStart(2, '0');
@@ -63,13 +72,19 @@ export async function calculateKeyFingerprint(key: CryptoKey): Promise<string> {
 }
 
 export async function decryptAuthenticationChallenge(
-	challenge: Uint8Array,
+	challenge: string,
 	privateKey: CryptoKey
 ): Promise<string> {
+	const binaryChallenge = atob(challenge);
+	const challengeBuffer = new Uint8Array(binaryChallenge.length);
+	for (let i = 0; i < binaryChallenge.length; i++) {
+		challengeBuffer[i] = binaryChallenge.charCodeAt(i);
+	}
+
 	const decryptedBuffer = await crypto.subtle.decrypt(
-		{ name: 'RSA-OAEP' },
+		{ name: 'RSA-OAEP' } satisfies RsaOaepParams,
 		privateKey,
-		challenge
+		challengeBuffer
 	);
 
 	return new TextDecoder().decode(decryptedBuffer);
