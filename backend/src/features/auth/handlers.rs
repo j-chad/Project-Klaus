@@ -2,20 +2,20 @@ use super::schemas::{JoinRoomRequest, JoinRoomResponse};
 use super::{service, utils};
 use crate::error::AppError;
 use crate::state::SharedState;
-use axum::Json;
 use axum::extract::{ConnectInfo, State};
 use axum::http::{HeaderMap, StatusCode};
 use axum::response::IntoResponse;
+use axum::{Json, debug_handler};
 use axum_extra::extract::CookieJar;
 use std::net::SocketAddr;
 use validator::Validate;
 
 pub async fn join_room(
     State(state): State<SharedState>,
-    Json(body): Json<JoinRoomRequest>,
     ConnectInfo(addr): ConnectInfo<SocketAddr>,
     headers: HeaderMap,
     cookies: CookieJar,
+    Json(body): Json<JoinRoomRequest>,
 ) -> Result<impl IntoResponse, AppError> {
     body.validate()?;
 

@@ -1,7 +1,7 @@
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use validator::Validate;
 
-#[derive(Validate)]
+#[derive(Validate, Deserialize)]
 pub struct JoinRoomRequest {
     pub room_id: String,
     #[validate(length(min = 1, max = 30))]
