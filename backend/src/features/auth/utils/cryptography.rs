@@ -6,6 +6,7 @@ use rand::rngs::OsRng;
 use rsa::pkcs8::DecodePublicKey;
 use rsa::{Oaep, RsaPublicKey};
 use sha2::{Digest, Sha256};
+use std::fmt::Write;
 use tracing::error;
 
 pub fn generate_secure_token() -> Result<String, AuthError> {
@@ -36,11 +37,10 @@ pub fn calculate_key_fingerprint(public_key_bytes: &[u8]) -> String {
     hasher.update(public_key_bytes);
     let fingerprint = hasher.finalize();
 
-    fingerprint
-        .iter()
-        .map(|b| format!("{b:02x}"))
-        .collect::<Vec<String>>()
-        .join(":")
+    fingerprint.iter().fold(String::new(), |mut acc, &b| {
+        let _ = write!(acc, "{b:02x}");
+        acc
+    })
 }
 
 pub fn encrypt_challenge_token(token: &str, public_key_bytes: &[u8]) -> Result<String, AuthError> {
