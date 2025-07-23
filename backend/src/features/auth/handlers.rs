@@ -28,15 +28,21 @@ pub async fn join_room(
         .map(String::from);
 
     let session_token =
-        service::create_session_token(&state.db, user_id, user_agent, Some(ip_address)).await?;
+        service::create_session_token(&state.db, user_id, user_agent.as_deref(), Some(ip_address))
+            .await?;
     let session_cookie = utils::new_session_cookie(&state.config.auth, &session_token);
 
-    let ephemeral_token =
-        service::create_ephemeral_token(&state.db, user_id, user_agent, Some(ip_address)).await?;
+    let connection_ticket = service::create_ephemeral_token(
+        &state.db,
+        user_id,
+        user_agent.as_deref(),
+        Some(ip_address),
+    )
+    .await?;
 
     Ok((
         StatusCode::CREATED,
         cookies.add(session_cookie),
-        Json(JoinRoomResponse {}),
+        Json(JoinRoomResponse { connection_ticket }),
     ))
 }

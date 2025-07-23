@@ -77,7 +77,7 @@ pub async fn new_token(
     token_type: &TokenType,
     token: &str,
     expires_at: &chrono::DateTime<chrono::Utc>,
-    user_agent: Option<String>,
+    user_agent: Option<&str>,
     ip_address: Option<IpAddr>,
 ) -> Result<(), sqlx::Error> {
     sqlx::query!(

@@ -47,7 +47,7 @@ pub async fn join_room(
 pub async fn create_session_token(
     pool: &sqlx::PgPool,
     member_id: uuid::Uuid,
-    user_agent: Option<String>,
+    user_agent: Option<&str>,
     ip_address: Option<IpAddr>,
 ) -> Result<String, AppError> {
     let token = generate_secure_token()?;
@@ -69,7 +69,7 @@ pub async fn create_session_token(
 pub async fn create_ephemeral_token(
     pool: &sqlx::PgPool,
     member_id: uuid::Uuid,
-    user_agent: Option<String>,
+    user_agent: Option<&str>,
     ip_address: Option<IpAddr>,
 ) -> Result<String, AppError> {
     let token = generate_secure_token()?;
@@ -91,7 +91,7 @@ pub async fn create_ephemeral_token(
 pub async fn create_challenge_token(
     pool: &sqlx::PgPool,
     member_id: uuid::Uuid,
-    user_agent: Option<String>,
+    user_agent: Option<&str>,
     ip_address: Option<IpAddr>,
 ) -> Result<String, AppError> {
     let token = generate_secure_token()?;
