@@ -83,11 +83,7 @@ pub async fn verify_challenge(
     .await?;
 
     let session_cookie = new_session_cookie(&state.config.auth, &session_token);
-    Ok((
-        StatusCode::CREATED,
-        cookies.add(session_cookie),
-        Json(session_token),
-    ))
+    Ok((StatusCode::CREATED, cookies.add(session_cookie)))
 }
 
 pub async fn create_ephemeral_token(

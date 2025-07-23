@@ -5,7 +5,7 @@ use rand::RngCore;
 use rand::rngs::OsRng;
 use rsa::pkcs8::DecodePublicKey;
 use rsa::{Oaep, RsaPublicKey};
-use sha2::{Digest, Sha256};
+use sha2::{Digest, Sha256, Sha512};
 use std::fmt::Write;
 use tracing::error;
 
@@ -49,7 +49,7 @@ pub fn encrypt_challenge_token(token: &str, public_key_bytes: &[u8]) -> Result<S
 
     let mut rng = OsRng;
 
-    let padding = Oaep::new::<Sha256>();
+    let padding = Oaep::new::<Sha512>();
     let encrypted_data = public_key
         .encrypt(&mut rng, padding, token.as_bytes())
         .or(Err(AuthError::TokenEncryptionFailed))?;
