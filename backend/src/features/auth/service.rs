@@ -1,16 +1,8 @@
-use super::schemas::JoinRoomRequest;
+use super::{
+    errors::AuthError, models::TokenType, queries, schemas::JoinRoomRequest, utils::cryptography,
+};
 use crate::error::AppError;
-use crate::features::auth::errors::AuthError;
-use crate::features::auth::models::TokenType;
-use crate::features::auth::queries;
-use base64::{Engine, prelude::BASE64_STANDARD};
-use rand::TryRngCore;
-use rand::rngs::OsRng;
-use rsa::RsaPublicKey;
-use rsa::pkcs8::DecodePublicKey;
-use sha2::{Digest, Sha256};
 use std::net::IpAddr;
-use tracing::error;
 
 static SESSION_TOKEN_DURATION: chrono::Duration = chrono::Duration::hours(1);
 static EPHEMERAL_TOKEN_DURATION: chrono::Duration = chrono::Duration::minutes(2);
@@ -37,7 +29,7 @@ pub async fn join_room(
         }
     }
 
-    let (public_key, fingerprint) = decode_public_key(&payload.public_key)?;
+    let (public_key, fingerprint) = cryptography::decode_public_key(&payload.public_key)?;
 
     let user_id =
         queries::new_room_member(pool, room.id, &payload.name, &fingerprint, &public_key).await?;
@@ -50,7 +42,7 @@ pub async fn create_session_token(
     user_agent: Option<&str>,
     ip_address: Option<IpAddr>,
 ) -> Result<String, AppError> {
-    let token = generate_secure_token()?;
+    let token = cryptography::generate_secure_token()?;
     let expiration = chrono::Utc::now() + SESSION_TOKEN_DURATION;
 
     queries::new_token(
@@ -72,7 +64,7 @@ pub async fn create_ephemeral_token(
     user_agent: Option<&str>,
     ip_address: Option<IpAddr>,
 ) -> Result<String, AppError> {
-    let token = generate_secure_token()?;
+    let token = cryptography::generate_secure_token()?;
     let expiration = chrono::Utc::now() + EPHEMERAL_TOKEN_DURATION;
 
     queries::new_token(
@@ -90,18 +82,23 @@ pub async fn create_ephemeral_token(
 
 pub async fn create_challenge_token(
     pool: &sqlx::PgPool,
-    member_id: uuid::Uuid,
+    fingerprint: &str,
     user_agent: Option<&str>,
     ip_address: Option<IpAddr>,
 ) -> Result<String, AppError> {
-    let token = generate_secure_token()?;
-    let expiration = chrono::Utc::now() + CHALLENGE_TOKEN_DURATION;
+    let (member_id, public_key) = queries::get_member_by_fingerprint(pool, fingerprint)
+        .await?
+        .ok_or(AuthError::MemberNotFound)?;
 
+    let raw_token = cryptography::generate_secure_token()?;
+    let token = cryptography::encrypt_challenge_token(&raw_token, &public_key)?;
+
+    let expiration = chrono::Utc::now() + CHALLENGE_TOKEN_DURATION;
     queries::new_token(
         pool,
         member_id,
         &TokenType::Challenge,
-        &token,
+        &raw_token,
         &expiration,
         user_agent,
         ip_address,
@@ -113,39 +110,4 @@ pub async fn create_challenge_token(
 pub async fn logout(pool: &sqlx::PgPool, member_id: uuid::Uuid) -> Result<(), AppError> {
     queries::delete_all_tokens(pool, member_id).await?;
     Ok(())
-}
-
-fn generate_secure_token() -> Result<String, AuthError> {
-    let mut token = vec![0u8; 32];
-    OsRng.try_fill_bytes(&mut token).or_else(|err| {
-        error!("Failed to generate secure token: {}", err);
-        Err(AuthError::TokenGenerationFailed)
-    })?;
-
-    Ok(BASE64_STANDARD.encode(token))
-}
-
-fn decode_public_key(public_key: &str) -> Result<(Vec<u8>, String), AuthError> {
-    let public_key_bytes = BASE64_STANDARD
-        .decode(public_key)
-        .or(Err(AuthError::InvalidPublicKey))?;
-
-    // validate the key - we just need the bytes for now.
-    RsaPublicKey::from_public_key_der(&public_key_bytes).or(Err(AuthError::InvalidPublicKey))?;
-
-    let fingerprint = calculate_key_fingerprint(&public_key_bytes);
-
-    Ok((public_key_bytes, fingerprint))
-}
-
-fn calculate_key_fingerprint(public_key_bytes: &[u8]) -> String {
-    let mut hasher = Sha256::new();
-    hasher.update(public_key_bytes);
-    let fingerprint = hasher.finalize();
-
-    fingerprint
-        .iter()
-        .map(|b| format!("{:02x}", b))
-        .collect::<Vec<String>>()
-        .join(":")
 }

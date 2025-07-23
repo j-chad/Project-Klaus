@@ -9,7 +9,12 @@ pub struct JoinRoomRequest {
     pub public_key: String, // DER encoded public key
 }
 
+#[derive(Deserialize)]
+pub struct CreateChallengeTokenRequest {
+    pub fingerprint: String,
+}
+
 #[derive(Serialize)]
-pub struct JoinRoomResponse {
-    pub connection_ticket: String,
+pub struct EphemeralTokenResponse {
+    pub ephemeral_token: String,
 }

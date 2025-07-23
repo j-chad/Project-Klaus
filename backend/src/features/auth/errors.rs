@@ -9,6 +9,8 @@ pub enum AuthError {
     TokenGenerationFailed,
     ExpiredToken,
     MissingToken,
+    MemberNotFound,
+    TokenEncryptionFailed,
 }
 
 impl From<AuthError> for AppError {
@@ -43,6 +45,16 @@ impl From<AuthError> for AppError {
                 "MISSING_TOKEN",
                 "No authentication token provided. Please log in.",
                 StatusCode::UNAUTHORIZED,
+            ),
+            AuthError::MemberNotFound => AppError::new(
+                "MEMBER_NOT_FOUND",
+                "No member found with the provided fingerprint.",
+                StatusCode::NOT_FOUND,
+            ),
+            AuthError::TokenEncryptionFailed => AppError::new(
+                "TOKEN_ENCRYPTION_FAILED",
+                "Failed to encrypt the token. Please try again later.",
+                StatusCode::INTERNAL_SERVER_ERROR,
             ),
         }
     }

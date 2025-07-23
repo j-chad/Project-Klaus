@@ -135,3 +135,20 @@ pub async fn delete_all_tokens(pool: &PgPool, member_id: Uuid) -> Result<(), sql
 
     Ok(())
 }
+
+pub async fn get_member_by_fingerprint(
+    pool: &PgPool,
+    fingerprint: &str,
+) -> Result<Option<(Uuid, Vec<u8>)>, sqlx::Error> {
+    sqlx::query!(
+        r#"
+        SELECT id, public_key
+        FROM room_member
+        WHERE fingerprint = $1
+        "#,
+        fingerprint
+    )
+    .fetch_optional(pool)
+    .await
+    .map(|row| row.map(|r| (r.id, r.public_key)))
+}

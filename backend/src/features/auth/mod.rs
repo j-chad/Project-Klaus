@@ -11,5 +11,8 @@ mod service;
 mod utils;
 
 pub fn build_router() -> axum::Router<SharedState> {
-    axum::Router::new().route("/join-room", post(handlers::join_room))
+    axum::Router::new()
+        .route("/join-room", post(handlers::join_room))
+        .route("/logout", post(handlers::logout))
+        .route("/challenge", post(handlers::create_challenge_token))
 }
