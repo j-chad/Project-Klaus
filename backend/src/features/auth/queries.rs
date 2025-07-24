@@ -182,12 +182,13 @@ pub async fn get_and_delete_ephemeral_token_by_room_code(
     sqlx::query_as!(
         Token,
         r#"
-        DELETE FROM tokens
-        USING room
-        WHERE tokens.member_id = room.id
-        AND room.join_code = $1
-        AND tokens.type = 'ephemeral'
+        DELETE FROM tokens 
+        USING room_member rm, room r
+        WHERE tokens.member_id = rm.id
+        AND rm.room_id = r.id
+        AND r.join_code = $1
         AND tokens.token = $2
+        AND tokens.type = 'ephemeral'
         RETURNING tokens.id, tokens.member_id, tokens.type AS "token_type: TokenType", tokens.created_at, tokens.expires_at, tokens.last_seen_at, tokens.user_agent, tokens.ip_address
         "#,
         room_code,
