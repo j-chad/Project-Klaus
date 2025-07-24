@@ -83,10 +83,10 @@ pub async fn new_token(
     sqlx::query!(
         r#"
         WITH deleted AS (
-            DELETE FROM tokens
+            DELETE FROM token
             WHERE member_id = $1 AND type = $2
         )
-        INSERT INTO tokens (member_id, type, token, expires_at, user_agent, ip_address)
+        INSERT INTO token (member_id, type, token, expires_at, user_agent, ip_address)
         VALUES ($1, $2, $3, $4, $5, $6)
         "#,
         member_id,
@@ -109,7 +109,7 @@ pub async fn get_session_token_and_update_access_time(
     sqlx::query_as!(
         Token,
         r#"
-        UPDATE tokens
+        UPDATE token
         SET last_seen_at = NOW()
         WHERE token = $1 AND type = 'session'
         RETURNING id, member_id, type AS "token_type: TokenType", created_at, expires_at, last_seen_at, user_agent, ip_address
@@ -123,7 +123,7 @@ pub async fn get_session_token_and_update_access_time(
 pub async fn delete_all_tokens(pool: &PgPool, member_id: Uuid) -> Result<(), sqlx::Error> {
     sqlx::query!(
         r#"
-        DELETE FROM tokens
+        DELETE FROM token
         WHERE member_id = $1
         "#,
         member_id
@@ -159,13 +159,13 @@ pub async fn get_and_delete_challenge_token_for_fingerprint(
     sqlx::query_as!(
         Token,
         r#"
-        DELETE FROM tokens
+        DELETE FROM token
         USING room_member
         WHERE member_id = room_member.id
         AND room_member.fingerprint = $1
-        AND tokens.type = 'challenge' 
-        AND tokens.token = $2
-        RETURNING tokens.id, tokens.member_id, tokens.type AS "token_type: TokenType", tokens.created_at, tokens.expires_at, tokens.last_seen_at, tokens.user_agent, tokens.ip_address
+        AND token.type = 'challenge' 
+        AND token.token = $2
+        RETURNING token.id, token.member_id, token.type AS "token_type: TokenType", token.created_at, token.expires_at, token.last_seen_at, token.user_agent, token.ip_address
         "#,
         fingerprint,
         token
@@ -182,14 +182,14 @@ pub async fn get_and_delete_ephemeral_token_by_room_code(
     sqlx::query_as!(
         Token,
         r#"
-        DELETE FROM tokens 
+        DELETE FROM token 
         USING room_member rm, room r
-        WHERE tokens.member_id = rm.id
+        WHERE token.member_id = rm.id
         AND rm.room_id = r.id
         AND r.join_code = $1
-        AND tokens.token = $2
-        AND tokens.type = 'ephemeral'
-        RETURNING tokens.id, tokens.member_id, tokens.type AS "token_type: TokenType", tokens.created_at, tokens.expires_at, tokens.last_seen_at, tokens.user_agent, tokens.ip_address
+        AND token.token = $2
+        AND token.type = 'ephemeral'
+        RETURNING token.id, token.member_id, token.type AS "token_type: TokenType", token.created_at, token.expires_at, token.last_seen_at, token.user_agent, token.ip_address
         "#,
         room_code,
         token

@@ -42,7 +42,7 @@ CREATE TYPE token_type AS ENUM (
     'challenge' -- short-lived token for challenge verification
 );
 
-CREATE TABLE tokens (
+CREATE TABLE token (
     id          UUID PRIMARY KEY         DEFAULT gen_random_uuid(),
     member_id  UUID    NOT NULL REFERENCES room_member(id) ON DELETE CASCADE,
 
