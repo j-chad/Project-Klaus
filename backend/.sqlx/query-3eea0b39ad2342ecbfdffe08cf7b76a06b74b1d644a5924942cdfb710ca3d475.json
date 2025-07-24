@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "\n        DELETE FROM tokens\n        USING room_member\n        WHERE member_id = room_member.id\n        AND room_member.fingerprint = $1\n        AND tokens.type = 'challenge' \n        AND tokens.token = $2\n        RETURNING tokens.id, tokens.member_id, tokens.type AS \"token_type: TokenType\", tokens.created_at, tokens.expires_at, tokens.last_seen_at, tokens.user_agent, tokens.ip_address\n        ",
+  "query": "\n        DELETE FROM token \n        USING room_member rm, room r\n        WHERE token.member_id = rm.id\n        AND rm.room_id = r.id\n        AND r.join_code = $1\n        AND token.token = $2\n        AND token.type = 'ephemeral'\n        RETURNING token.id, token.member_id, token.type AS \"token_type: TokenType\", token.created_at, token.expires_at, token.last_seen_at, token.user_agent, token.ip_address\n        ",
   "describe": {
     "columns": [
       {
@@ -72,5 +72,5 @@
       true
     ]
   },
-  "hash": "f35722c87cd4c5bc197e3419a1a1548af85bb40755440e39569b2d4af5040e4d"
+  "hash": "3eea0b39ad2342ecbfdffe08cf7b76a06b74b1d644a5924942cdfb710ca3d475"
 }

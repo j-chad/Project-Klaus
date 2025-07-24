@@ -1,8 +1,9 @@
 use crate::features::auth::errors::AuthError;
 use base64::Engine;
 use base64::prelude::BASE64_STANDARD;
-use rand::RngCore;
+use rand::distributions::{Alphanumeric, DistString, Distribution, Uniform};
 use rand::rngs::OsRng;
+use rand::{Rng, RngCore};
 use rsa::pkcs8::DecodePublicKey;
 use rsa::{Oaep, RsaPublicKey};
 use sha2::{Digest, Sha256, Sha512};
@@ -55,4 +56,15 @@ pub fn encrypt_challenge_token(token: &str, public_key_bytes: &[u8]) -> Result<S
         .or(Err(AuthError::TokenEncryptionFailed))?;
 
     Ok(BASE64_STANDARD.encode(encrypted_data))
+}
+
+const ROOM_CODE_LENGTH: usize = 8;
+const ROOM_CODE_CHARSET: &[u8] = b"ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+pub fn generate_room_code() -> String {
+    let mut rng = OsRng;
+    Uniform::from(0..ROOM_CODE_CHARSET.len())
+        .sample_iter(&mut rng)
+        .take(ROOM_CODE_LENGTH)
+        .map(|i| ROOM_CODE_CHARSET[i] as char)
+        .collect()
 }

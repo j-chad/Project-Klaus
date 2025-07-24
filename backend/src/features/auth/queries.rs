@@ -197,3 +197,40 @@ pub async fn get_and_delete_ephemeral_token_by_room_code(
     .fetch_optional(pool)
     .await
 }
+
+/// Creates a new room and an owner for that room.
+///
+/// Returns the ID of the newly created member (the owner).
+pub async fn new_room_and_owner(
+    pool: &PgPool,
+    room_name: &str,
+    join_code: &str,
+    max_members: Option<u32>,
+    username: &str,
+    fingerprint: &str,
+    public_key: &[u8],
+) -> Result<Uuid, sqlx::Error> {
+    sqlx::query!(
+        r#"
+        WITH new_room AS (
+            INSERT INTO room (name, join_code, max_members)
+            VALUES ($1, $2, $3)
+            RETURNING id
+        )
+        INSERT INTO room_member (room_id, name, fingerprint, public_key, is_owner)
+        SELECT
+            new_room.id, $4, $5, $6, TRUE
+        FROM new_room
+        RETURNING id
+        "#,
+        room_name,
+        join_code,
+        max_members.map(|m| m as i32),
+        username,
+        fingerprint,
+        public_key
+    )
+    .fetch_one(pool)
+    .await
+    .map(|row| row.id)
+}

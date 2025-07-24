@@ -8,6 +8,28 @@ static SESSION_TOKEN_DURATION: chrono::Duration = chrono::Duration::hours(1);
 static EPHEMERAL_TOKEN_DURATION: chrono::Duration = chrono::Duration::minutes(2);
 static CHALLENGE_TOKEN_DURATION: chrono::Duration = chrono::Duration::minutes(2);
 
+pub async fn create_room(
+    pool: &sqlx::PgPool,
+    payload: &super::schemas::CreateRoomRequest,
+) -> Result<(uuid::Uuid, String), AppError> {
+    let (public_key, fingerprint) = cryptography::decode_public_key(&payload.public_key)?;
+
+    let room_code = cryptography::generate_room_code();
+
+    let user_id = queries::new_room_and_owner(
+        pool,
+        &payload.room_name,
+        &room_code,
+        payload.max_players,
+        &payload.username,
+        &fingerprint,
+        &public_key,
+    )
+    .await?;
+
+    Ok((user_id, room_code))
+}
+
 /// Creates a new room member and returns the user ID.
 pub async fn join_room(
     pool: &sqlx::PgPool,
