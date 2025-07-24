@@ -7,9 +7,10 @@ use std::sync::Arc;
 mod app;
 mod config;
 mod db;
+mod error;
+mod features;
 mod logging;
 mod state;
-mod features;
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
@@ -17,7 +18,7 @@ async fn main() -> anyhow::Result<()> {
     logging::init_tracing(&config.logging)?;
 
     tracing::info!("Starting application in {} environment", config.env);
-    let db = connect_db(&config.sqlite).await?;
+    let db = connect_db(&config.postgresql).await?;
     let app_state: SharedState = Arc::new(AppState::new(db, config.clone()));
 
     let app = create_app(app_state);
@@ -30,7 +31,7 @@ async fn main() -> anyhow::Result<()> {
         listener,
         app.into_make_service_with_connect_info::<SocketAddr>(),
     )
-        .await?;
+    .await?;
 
     Ok(())
 }

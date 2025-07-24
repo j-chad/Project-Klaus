@@ -4,11 +4,14 @@ env="production"
 port=8080
 bind_address="127.0.0.1"
 
-[sqlite]
-url="file:chimney.db"
+[postgresql]
 max_connections=10
 lazy=false
 
 [logging]
 level="info"
 format="pretty"
+
+[auth]
+session_cookie_name="session"
+session_cookie_secure=true
