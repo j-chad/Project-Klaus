@@ -179,6 +179,16 @@ async function hybridEncrypt(
 	return encryptedMessage;
 }
 
+/**
+ * Hybrid decryption function that combines RSA and AES-GCM decryption.
+ *
+ * This function takes an encrypted message, extracts the encrypted AES key,
+ * decrypts it using the provided RSA private key, and then decrypts the message
+ * using the decrypted AES key.
+ *
+ * @param {Uint8Array} message - The encrypted message to decrypt.
+ * @param {CryptoKey} rsaPrivateKey - The RSA private key to use for decrypting the AES key.
+ */
 async function hybridDecrypt(
 	message: Uint8Array,
 	rsaPrivateKey: CryptoKey
@@ -218,6 +228,12 @@ async function hybridDecrypt(
 	);
 }
 
+/**
+ * Decodes a base64-encoded string into a Uint8Array.
+ *
+ * @param {string} base64 - The base64-encoded string to decode.
+ * @returns {Uint8Array} The decoded binary data as a Uint8Array.
+ */
 function decodeBase64(base64: string): Uint8Array {
 	const binaryString = atob(base64);
 	const byteArray = new Uint8Array(binaryString.length);
