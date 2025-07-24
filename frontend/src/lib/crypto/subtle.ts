@@ -1,5 +1,11 @@
 import { combineNonceAndKey, NONCE_BYTES, securePermute, splitNonceAndKey } from './utils';
 
+/**
+ * Generates a new RSA key pair for publication encryption & decryption.
+ *
+ * These keys will be used to encrypt and decrypt messages in the publication system
+ * as well as authentication challenges.
+ */
 export async function generatePublicationKeypair(): Promise<CryptoKeyPair> {
 	return crypto.subtle.generateKey(
 		{
@@ -13,6 +19,11 @@ export async function generatePublicationKeypair(): Promise<CryptoKeyPair> {
 	);
 }
 
+/** Constructs a layered encryption message for publication.
+ *
+ * @param message - The message to encrypt.
+ * @param publicKeys - An array of public keys to encrypt the message with.
+ */
 export async function encryptPublicationMessage(
 	message: string,
 	publicKeys: CryptoKey[]
@@ -29,6 +40,17 @@ export async function encryptPublicationMessage(
 	return messageBuffer;
 }
 
+/** Attempts to decrypt all messages in a round of publication messages.
+ *
+ * This function will try to decrypt each message using the provided private key.
+ * If a message cannot be decrypted (e.g., due to an incorrect key), it will be skipped.
+ *
+ * It is possible that for a given round no messages can be decrypted. Like-wise, it is possible that
+ * multiple or all messages can be decrypted.
+ *
+ * @param messages - An array of encrypted messages to decrypt.
+ * @param privateKey - The private key to use for decryption.
+ */
 export async function decryptPublicationMessagesRound(
 	messages: Uint8Array[],
 	privateKey: CryptoKey
@@ -39,6 +61,10 @@ export async function decryptPublicationMessagesRound(
 	return (await Promise.all(decryptionTasks)).filter((result) => result !== null);
 }
 
+/** Exports a public key to a base64-encoded DER format.
+ *
+ * @param key - The CryptoKey to export. It must be a public key.
+ */
 export async function exportPublicKey(key: CryptoKey): Promise<string> {
 	if (key.type !== 'public') {
 		throw new Error('Key must be a public key to export');
@@ -71,20 +97,22 @@ export async function calculateKeyFingerprint(key: CryptoKey): Promise<string> {
 	return hashArray.join('');
 }
 
+/** Decrypts an authentication challenge using a private RSA key.
+ *
+ * This function takes a base64-encoded challenge string, decodes it,
+ * and decrypts it using the provided RSA private key.
+ *
+ * @param challenge - The base64-encoded challenge string to decrypt.
+ * @param privateKey - The RSA private key to use for decryption.
+ */
 export async function decryptAuthenticationChallenge(
 	challenge: string,
 	privateKey: CryptoKey
 ): Promise<string> {
-	const binaryChallenge = atob(challenge);
-	const challengeBuffer = new Uint8Array(binaryChallenge.length);
-	for (let i = 0; i < binaryChallenge.length; i++) {
-		challengeBuffer[i] = binaryChallenge.charCodeAt(i);
-	}
-
 	const decryptedBuffer = await crypto.subtle.decrypt(
 		{ name: 'RSA-OAEP' } satisfies RsaOaepParams,
 		privateKey,
-		challengeBuffer
+		decodeBase64(challenge)
 	);
 
 	return new TextDecoder().decode(decryptedBuffer);
@@ -188,4 +216,13 @@ async function hybridDecrypt(
 		key,
 		cipherText
 	);
+}
+
+function decodeBase64(base64: string): Uint8Array {
+	const binaryString = atob(base64);
+	const byteArray = new Uint8Array(binaryString.length);
+	for (let i = 0; i < binaryString.length; i++) {
+		byteArray[i] = binaryString.charCodeAt(i);
+	}
+	return byteArray;
 }
