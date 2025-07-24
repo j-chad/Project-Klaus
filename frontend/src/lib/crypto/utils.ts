@@ -1,9 +1,12 @@
 export const NONCE_BYTES = 12; // AES-GCM nonce size is 12 bytes
 
-/**
- * Combines a nonce and a symmetric key into a single Uint8Array.
- * @param nonce
- * @param key
+/** Combines a nonce and a symmetric key into a single Uint8Array.
+ *
+ * This is useful for hybrid encryption schemes where the nonce needs to be
+ * included with the key for decryption.
+ *
+ * @param nonce - A cryptographic nonce of size NONCE_BYTES.
+ * @param key - An ArrayBuffer representing the symmetric key.
  */
 export function combineNonceAndKey(nonce: Uint8Array, key: ArrayBuffer): Uint8Array {
 	const combined = new Uint8Array(NONCE_BYTES + key.byteLength);
@@ -12,8 +15,11 @@ export function combineNonceAndKey(nonce: Uint8Array, key: ArrayBuffer): Uint8Ar
 	return combined;
 }
 
-/**
- * Splits a combined ArrayBuffer into its nonce and key components.
+/** Splits a combined ArrayBuffer into its nonce and key components.
+ *
+ * This is the inverse of `combineNonceAndKey`, allowing you to retrieve
+ * the original nonce and key from a combined ArrayBuffer.
+ *
  * @param combined - The combined ArrayBuffer containing the nonce and key.
  */
 export function splitNonceAndKey(combined: ArrayBuffer): { nonce: ArrayBuffer; key: ArrayBuffer } {

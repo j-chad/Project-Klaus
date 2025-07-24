@@ -121,6 +121,7 @@ export async function decryptAuthenticationChallenge(
 /** Generates a 256-bit symmetric key for AES-GCM encryption.
  *
  * This is used for hybrid encryption, where the symmetric key is used to encrypt the actual message,
+ * and the symmetric key itself is encrypted with an RSA public key.
  */
 async function generateSymmetricKey(): Promise<CryptoKey> {
 	return crypto.subtle.generateKey(
