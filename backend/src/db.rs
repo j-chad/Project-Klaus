@@ -5,7 +5,7 @@ use sqlx::postgres::PgPoolOptions;
 use tracing::{debug, info};
 
 pub async fn connect_db(config: &config::PostgreSQLSettings) -> Result<PgPool> {
-    debug!(lazy = config.lazy, "Connecting to sqlite");
+    debug!(lazy = config.lazy, "Connecting to postgresql");
     let pool_options = PgPoolOptions::new().max_connections(config.max_connections);
 
     let pool = if config.lazy {
@@ -15,6 +15,6 @@ pub async fn connect_db(config: &config::PostgreSQLSettings) -> Result<PgPool> {
     };
 
     // Log success message
-    info!("Successfully connected to sqlite");
+    info!("Successfully connected to postgresql");
     Ok(pool)
 }
