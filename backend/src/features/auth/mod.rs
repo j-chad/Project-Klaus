@@ -7,7 +7,7 @@ mod middleware;
 mod models;
 mod queries;
 mod schemas;
-mod service;
+pub(crate) mod service;
 mod utils;
 
 pub fn build_router() -> axum::Router<SharedState> {

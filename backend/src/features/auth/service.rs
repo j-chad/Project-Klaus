@@ -128,6 +128,22 @@ pub async fn exchange_challenge_for_session(
     Ok(session_token)
 }
 
+pub async fn validate_websocket_token(
+    pool: &sqlx::PgPool,
+    token: &str,
+    room_code: &str,
+) -> Result<(), AppError> {
+    let token = queries::get_and_delete_ephemeral_token_by_room_code(pool, room_code, token)
+        .await?
+        .ok_or(AuthError::InvalidToken)?;
+
+    if token.expires_at < chrono::Utc::now() {
+        return Err(AuthError::ExpiredToken.into());
+    }
+
+    Ok(())
+}
+
 pub async fn logout(pool: &sqlx::PgPool, member_id: uuid::Uuid) -> Result<(), AppError> {
     queries::delete_all_tokens(pool, member_id).await?;
     Ok(())

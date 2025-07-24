@@ -1,14 +1,15 @@
+use crate::error::AppError;
+use crate::features::auth;
 use crate::state::SharedState;
-use axum::extract::ws::{WebSocket};
-use axum::extract::{Query, WebSocketUpgrade};
+use axum::extract::ws::WebSocket;
+use axum::extract::{Query, State, WebSocketUpgrade};
 use axum::response::Response;
-use axum::routing::{any};
+use axum::routing::any;
 use serde::Deserialize;
-use tracing::{trace};
+use tracing::trace;
 
 pub fn build_router() -> axum::Router<SharedState> {
-    axum::Router::new()
-        .route("/ws", any(handler))
+    axum::Router::new().route("/ws", any(handler))
 }
 
 #[derive(Deserialize)]
@@ -17,20 +18,23 @@ struct WebsocketOptions {
     token: String,
 }
 
-async fn handler(ws: WebSocketUpgrade, options: Query<WebsocketOptions>) -> Response {
-    trace!("handling WebSocket upgrade request");
-    
+async fn handler(
+    ws: WebSocketUpgrade,
+    options: Query<WebsocketOptions>,
+    State(state): State<SharedState>,
+) -> Result<Response, AppError> {
+    trace!("websocket connection request for room: {}", options.room);
 
-    ws.on_upgrade(handle_socket)
+    auth::service::validate_websocket_token(&state.db, &options.token, &options.room).await?;
+
+    Ok(ws.on_upgrade(handle_socket))
 }
 
 async fn handle_socket(mut socket: WebSocket) {
     trace!("websocket client connected");
 
     while let Some(msg) = socket.recv().await {
-        let msg = if let Ok(msg) = msg {
-            msg
-        } else {
+        let Ok(msg) = msg else {
             // client disconnected
             return;
         };
