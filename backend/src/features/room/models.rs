@@ -9,7 +9,7 @@ pub struct Room {
     pub started_at: Option<chrono::DateTime<chrono::Utc>>,
 }
 
-#[derive(sqlx::Type, serde::Serialize, Eq, PartialEq)]
+#[derive(sqlx::Type, serde::Serialize, Eq, PartialEq, Debug)]
 #[sqlx(type_name = "game_phase", rename_all = "snake_case")]
 pub enum GamePhase {
     Lobby,

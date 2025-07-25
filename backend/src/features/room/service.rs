@@ -1,7 +1,8 @@
-use super::errors::RoomError;
+use super::errors::{ExpectedCurrent, RoomError};
 use super::queries;
 use crate::error::AppError;
 use crate::features::auth;
+use crate::features::room::models::GamePhase;
 use uuid::Uuid;
 
 pub async fn create_room(
@@ -90,13 +91,23 @@ pub async fn handle_santa_id_message(
     member_id: &Uuid,
     message_content: &str,
 ) -> Result<(), AppError> {
-    // has the user already sent a message in this round?
-    // is the game in the correct phase?
+    // is the game in the correct phase? - throw an error if not
+    let game_phase = queries::get_game_phase_by_member(db, member_id).await?;
+    if game_phase != GamePhase::SantaId {
+        return Err(RoomError::InvalidGamePhase(ExpectedCurrent {
+            expected: GamePhase::SantaId,
+            current: game_phase,
+        })
+        .into());
+    }
 
-    // create a new message
+    // has the user already sent a message in this round? - throw an error if they have
 
-    // is the round finished?
-    // is the phase finished?
+    // create a new message in the current round
+    queries::create_santa_id_message(db, member_id, message_content).await?;
+
+    // is the round finished? - start the next round
+    // is the phase finished? - start the next phase
 
     Ok(())
 }

@@ -1,4 +1,5 @@
 use super::models;
+use crate::features::room::models::GamePhase;
 use sqlx::PgPool;
 use uuid::Uuid;
 
@@ -131,4 +132,21 @@ pub async fn start_game(db: &PgPool, member_id: &Uuid) -> Result<(), sqlx::Error
     }
 
     Ok(())
+}
+
+pub async fn get_game_phase_by_member(
+    db: &PgPool,
+    member_id: &Uuid,
+) -> Result<GamePhase, sqlx::Error> {
+    sqlx::query!(
+        r#"
+        SELECT game_phase AS "game_phase: GamePhase"
+        FROM room
+        WHERE id = (SELECT room_id FROM room_member WHERE id = $1)
+        "#,
+        member_id
+    )
+    .fetch_one(db)
+    .await
+    .map(|row| row.game_phase)
 }
