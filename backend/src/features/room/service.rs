@@ -117,6 +117,14 @@ pub async fn handle_santa_id_message(
     Ok(())
 }
 
+pub async fn commit_seed(db: &sqlx::PgPool, member_id: &Uuid, hash: &str) -> Result<(), AppError> {
+    expect_game_phase(db, member_id, GamePhase::SeedCommit).await?;
+
+    // does user already have a seed committed?
+
+    // are they the last user to commit a seed?
+}
+
 async fn advance_message_round(
     db: &sqlx::PgPool,
     room_id: &Uuid,

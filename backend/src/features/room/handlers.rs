@@ -101,3 +101,13 @@ pub async fn handle_santa_id_message(
 
     Ok(StatusCode::NO_CONTENT)
 }
+
+pub async fn commit_seed(
+    State(state): State<SharedState>,
+    auth::Session(session): auth::Session,
+    Json(body): Json<schemas::CommitSeedRequest>,
+) -> Result<impl IntoResponse, AppError> {
+    service::commit_seed(&state.db, &session.member_id, &body.hash).await?;
+
+    Ok(StatusCode::NO_CONTENT)
+}
