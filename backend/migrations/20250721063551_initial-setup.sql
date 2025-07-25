@@ -6,12 +6,25 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
+-- Game state tracking
+CREATE TYPE game_phase AS ENUM (
+    'waiting',       -- waiting for members to join
+    'santa_id',      -- step 2: publishing santa IDs
+    'seed_gen',      -- step 3: generating seed components
+    'assignment',    -- step 4: calculating assignments
+    'verification',  -- step 5: checking for self-assignments
+    'completed'      -- game finished successfully
+);
+
 CREATE TABLE room (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     join_code TEXT UNIQUE NOT NULL,
 
     name TEXT NOT NULL,
     max_members INTEGER,
+
+    game_phase game_phase NOT NULL DEFAULT 'waiting',
+    iteration INTEGER NOT NULL DEFAULT 0,
 
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL,
