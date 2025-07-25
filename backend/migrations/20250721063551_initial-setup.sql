@@ -8,12 +8,12 @@ $$ LANGUAGE plpgsql;
 
 -- Game state tracking
 CREATE TYPE game_phase AS ENUM (
-    'waiting',       -- waiting for members to join
-    'santa_id',      -- step 2: publishing santa IDs
-    'seed_gen',      -- step 3: generating seed components
-    'assignment',    -- step 4: calculating assignments
-    'verification',  -- step 5: checking for self-assignments
-    'completed'      -- game finished successfully
+    'waiting',         -- waiting for members to join
+    'santa_id',        -- step 2: anonymously publishing santa IDs
+    'seed_gen_commit', -- step 3a: publish seed commitment
+    'seed_gen_reveal', -- step 3b: revealing the seed
+    'verification',    -- step 5: checking for self-assignments
+    'completed'        -- game finished successfully
 );
 
 CREATE TABLE room (
@@ -30,6 +30,11 @@ CREATE TABLE room (
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL,
     started_at TIMESTAMP WITH TIME ZONE DEFAULT NULL,
     deleted_at TIMESTAMP WITH TIME ZONE DEFAULT NULL
+
+    CHECK ( -- game_phase can only be waiting if iteration is 0
+      (game_phase = 'waiting' AND iteration = 0) OR
+      (game_phase != 'waiting' AND iteration > 0)
+    )
 );
 
 CREATE TRIGGER trigger_update_room_updated_at
@@ -46,7 +51,13 @@ CREATE TABLE room_member (
     public_key  BYTEA NOT NULL,
     is_owner    BOOLEAN NOT NULL         DEFAULT FALSE,
 
-    joined_at   TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+    seed_commitment TEXT,
+    seed INT,
+
+    joined_at   TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+
+    UNIQUE (room_id, seed_commitment), -- each member in a room must have a unique seed commitment
+    CHECK (seed IS NULL OR seed_commitment IS NOT NULL) -- must commit before revealing seed
 );
 
 CREATE TYPE token_type AS ENUM (
@@ -68,4 +79,28 @@ CREATE TABLE token (
     created_at  TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL,
     expires_at TIMESTAMP WITH TIME ZONE NOT NULL,
     last_seen_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL
+);
+
+CREATE TABLE santa_id_round (
+    id          UUID PRIMARY KEY         DEFAULT gen_random_uuid(),
+    room_id     UUID    NOT NULL REFERENCES room(id) ON DELETE CASCADE,
+
+    round_number INTEGER NOT NULL, -- 0 to N, where N is the number of members in the room
+
+    created_at  TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL,
+
+    UNIQUE (room_id, round_number),
+    CHECK (round_number >= 0)
+);
+
+CREATE TABLE santa_id_message (
+    id          UUID PRIMARY KEY         DEFAULT gen_random_uuid(),
+    round_id    UUID    NOT NULL REFERENCES santa_id_round(id) ON DELETE CASCADE,
+    member_id   UUID    NOT NULL REFERENCES room_member(id) ON DELETE CASCADE,
+
+    content     TEXT NOT NULL,
+
+    created_at  TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL,
+
+    UNIQUE (round_id, member_id) -- each member can only send one message per round
 );
