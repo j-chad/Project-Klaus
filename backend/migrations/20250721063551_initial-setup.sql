@@ -9,10 +9,10 @@ $$ LANGUAGE plpgsql;
 -- Game state tracking
 CREATE TYPE game_phase AS ENUM (
     'waiting',         -- waiting for members to join
-    'santa_id',        -- step 2: anonymously publishing santa IDs
-    'seed_gen_commit', -- step 3a: publish seed commitment
-    'seed_gen_reveal', -- step 3b: revealing the seed
-    'verification',    -- step 5: checking for self-assignments
+    'santa_id',        -- step 1: anonymously publishing santa IDs
+    'seed_gen_commit', -- step 2a: publish seed commitment
+    'seed_gen_reveal', -- step 2b: revealing the seed
+    'verification',    -- step 3: checking for self-assignments
     'rejected',        -- game rejected due to self-assignments or other issues. wait for members to acknowledge
     'completed'        -- game finished successfully
 );
