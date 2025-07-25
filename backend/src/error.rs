@@ -43,7 +43,7 @@ impl AppError {
         }
     }
 
-    pub fn with_details(mut self, details: Value) -> Self {
+    pub fn with_details(mut self, details: impl Serialize) -> Self {
         self.details = Some(details);
         self
     }
