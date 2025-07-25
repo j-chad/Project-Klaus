@@ -13,6 +13,7 @@ CREATE TYPE game_phase AS ENUM (
     'seed_gen_commit', -- step 3a: publish seed commitment
     'seed_gen_reveal', -- step 3b: revealing the seed
     'verification',    -- step 5: checking for self-assignments
+    'rejected',        -- game rejected due to self-assignments or other issues. wait for members to acknowledge
     'completed'        -- game finished successfully
 );
 
@@ -53,6 +54,9 @@ CREATE TABLE room_member (
 
     seed_commitment TEXT,
     seed INT,
+
+    rejected_proof INT,
+    result_acknowledged BOOLEAN NOT NULL DEFAULT FALSE, -- whether the member has acknowledged that the game is now complete/rejected
 
     joined_at   TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
 
