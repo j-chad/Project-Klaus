@@ -8,10 +8,10 @@ $$ LANGUAGE plpgsql;
 
 -- Game state tracking
 CREATE TYPE game_phase AS ENUM (
-    'waiting',         -- waiting for members to join
+    'lobby',         -- waiting for members to join
     'santa_id',        -- step 1: anonymously publishing santa IDs
-    'seed_gen_commit', -- step 2a: publish seed commitment
-    'seed_gen_reveal', -- step 2b: revealing the seed
+    'seed_commit', -- step 2a: publish seed commitment
+    'seed_reveal', -- step 2b: revealing the seed
     'verification',    -- step 3: checking for self-assignments
     'rejected',        -- game rejected due to self-assignments or other issues. wait for members to acknowledge
     'completed'        -- game finished successfully
@@ -24,7 +24,7 @@ CREATE TABLE room (
     name TEXT NOT NULL,
     max_members INTEGER,
 
-    game_phase game_phase NOT NULL DEFAULT 'waiting',
+    game_phase game_phase NOT NULL DEFAULT 'lobby',
     iteration INTEGER NOT NULL DEFAULT 0,
 
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL,
@@ -34,7 +34,7 @@ CREATE TABLE room (
 
     CHECK ( -- game_phase can only be waiting if iteration is 0
       (iteration = 0) OR
-      (iteration > 0 AND game_phase != 'waiting')
+      (iteration > 0 AND game_phase != 'lobby')
     )
 );
 

@@ -86,8 +86,8 @@ pub async fn start_game(
 ) -> Result<impl IntoResponse, AppError> {
     service::requires_owner_permission(&state.db, &session.member_id).await?;
 
-    service::start_game(&state.db, &session.room_id).await?;
-    service::handle_santa_id_message(&state.db, &session.member_id, &body.message_content).await?;
+    service::start_game(&state.db, &session.member_id).await?;
+    //service::handle_santa_id_message(&state.db, &session.member_id, &body.message_content).await?;
 
     Ok(StatusCode::NO_CONTENT)
 }
