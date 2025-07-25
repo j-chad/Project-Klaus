@@ -3,6 +3,7 @@ use super::queries;
 use crate::error::AppError;
 use crate::features::auth;
 use crate::features::room::models::GamePhase;
+use tracing::error;
 use uuid::Uuid;
 
 pub async fn create_room(
@@ -89,20 +90,21 @@ pub async fn start_game(db: &sqlx::PgPool, member_id: &Uuid) -> Result<(), AppEr
 pub async fn handle_santa_id_message(
     db: &sqlx::PgPool,
     member_id: &Uuid,
-    message_content: &str,
+    message_contents: &[String],
 ) -> Result<(), AppError> {
     expect_game_phase(db, member_id, GamePhase::SantaId).await?;
 
     let status = queries::get_message_round_status(db, member_id).await?;
     if status.user_has_sent_message {
         return Err(RoomError::AlreadySentMessage.into());
+    } else if status.users_remaining == 0 {
+        error!("User has not sent a message but no users remaining");
+        return Err(AppError::unknown_error());
     }
 
-    // create a new message in the current round
-    //queries::create_santa_id_message(db, member_id, message_content).await?;
+    queries::create_santa_id_message(db, &status.room_id, member_id, message_contents).await?;
 
-    // is the round finished? - start the next round
-    if status.users_remaining <= 1 {
+    if status.users_remaining == 1 {
         //advance_message_round(db, member_id).await?;
     }
 

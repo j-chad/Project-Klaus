@@ -39,7 +39,7 @@ impl From<RoomError> for AppError {
                 "The game is not in the correct phase for this action.",
                 StatusCode::BAD_REQUEST,
             )
-            .with_serializable_details(expected_current),
+            .with_details(expected_current),
             RoomError::AlreadySentMessage => AppError::new(
                 "ALREADY_SENT_MESSAGE",
                 "You have already sent a message in this round.",

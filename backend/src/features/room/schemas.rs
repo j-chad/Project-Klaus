@@ -27,5 +27,5 @@ pub struct JoinRoomRequest {
 
 #[derive(Deserialize)]
 pub struct SantaIDMessage {
-    pub message_content: String,
+    pub message_content: Vec<String>,
 }

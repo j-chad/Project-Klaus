@@ -188,9 +188,10 @@ pub async fn get_message_round_status(
             )
         )
         SELECT
+            members_room.id AS room_id,
             user_status.has_sent_message,
             remaining_count.remaining
-        FROM user_status, remaining_count
+        FROM user_status, remaining_count, members_room
         "#,
         member_id,
     )
@@ -205,6 +206,36 @@ pub async fn get_message_round_status(
         Ok(MessageRoundStatus {
             user_has_sent_message,
             users_remaining,
+            room_id: row.room_id,
         })
     })?
+}
+
+pub async fn create_santa_id_message(
+    db: &PgPool,
+    room_id: &Uuid,
+    member_id: &Uuid,
+    message_contents: &[String],
+) -> Result<(), sqlx::Error> {
+    sqlx::query!(
+        r#"
+        WITH current_round AS (
+            SELECT id
+            FROM santa_id_round
+            WHERE room_id = $1
+            ORDER BY round_number DESC
+            LIMIT 1
+        )
+        INSERT INTO santa_id_message (member_id, content, round_id)
+        SELECT $2, $3, current_round.id
+        FROM current_round
+        "#,
+        room_id,
+        member_id,
+        message_contents
+    )
+    .execute(db)
+    .await?;
+
+    Ok(())
 }

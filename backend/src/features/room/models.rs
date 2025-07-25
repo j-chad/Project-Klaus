@@ -23,6 +23,7 @@ pub enum GamePhase {
 
 #[derive(Debug)]
 pub struct MessageRoundStatus {
+    pub room_id: uuid::Uuid,
     pub user_has_sent_message: bool,
     pub users_remaining: i64,
 }
