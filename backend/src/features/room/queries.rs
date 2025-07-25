@@ -60,7 +60,7 @@ pub async fn new_room_and_owner(
     pool: &PgPool,
     room_name: &str,
     join_code: &str,
-    max_members: Option<u32>,
+    max_members: Option<i32>,
     username: &str,
     fingerprint: &str,
     public_key: &[u8],
@@ -80,7 +80,7 @@ pub async fn new_room_and_owner(
         "#,
         room_name,
         join_code,
-        max_members.map(|m| m as i32),
+        max_members,
         username,
         fingerprint,
         public_key

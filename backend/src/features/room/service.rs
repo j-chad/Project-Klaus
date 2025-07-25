@@ -2,7 +2,7 @@ use super::errors::{ExpectedCurrent, RoomError};
 use super::queries;
 use crate::error::AppError;
 use crate::features::auth;
-use crate::features::room::models::{GamePhase, MessageRoundStatus};
+use crate::features::room::models::GamePhase;
 use tracing::error;
 use uuid::Uuid;
 
@@ -21,7 +21,7 @@ pub async fn create_room(
         pool,
         room_name,
         &room_code,
-        max_players,
+        max_players.map(|p| p as i32),
         username,
         &fingerprint,
         &public_key,
@@ -50,11 +50,11 @@ pub async fn join_room(
                 queries::get_current_member_count(pool, room.id).await?
             };
 
-            if current_members >= max_members as i64 {
+            if current_members >= i64::from(max_members) {
                 return Err(RoomError::RoomFull.into());
             }
 
-            (current_members + 1) == max_members as i64
+            (current_members + 1) == i64::from(max_members)
         }
         None => false,
     };
@@ -109,7 +109,7 @@ pub async fn handle_santa_id_message(
             db,
             &status.room_id,
             status.current_round,
-            status.total_users as i32,
+            i32::try_from(status.total_users).map_err(|_e| AppError::unknown_error())?,
         )
         .await?;
     }
@@ -124,7 +124,7 @@ async fn advance_message_round(
     members_in_room: i32,
 ) -> Result<(), AppError> {
     // Once N rounds have been completed - all messages should be decrypted.
-    if (current_round == members_in_room) {
+    if current_round == members_in_room {
         return queries::set_game_phase(db, room_id, GamePhase::SeedCommit)
             .await
             .map_err(std::convert::Into::into);
