@@ -1,5 +1,5 @@
 use super::models;
-use crate::features::room::models::GamePhase;
+use crate::features::room::models::{GamePhase, MessageRoundStatus};
 use sqlx::PgPool;
 use uuid::Uuid;
 
@@ -149,4 +149,62 @@ pub async fn get_game_phase_by_member(
     .fetch_one(db)
     .await
     .map(|row| row.game_phase)
+}
+
+pub async fn get_message_round_status(
+    db: &PgPool,
+    member_id: &Uuid,
+) -> Result<MessageRoundStatus, sqlx::Error> {
+    sqlx::query!(
+        r#"
+        WITH members_room AS (
+            SELECT id
+            FROM room
+            WHERE id = (SELECT room_id FROM room_member WHERE id = $1)
+        ),
+        current_round AS (
+            SELECT id
+            FROM santa_id_round
+            WHERE room_id = (SELECT id FROM members_room)
+            ORDER BY round_number DESC
+            LIMIT 1
+        ),
+        user_status AS (
+            SELECT EXISTS(
+                SELECT 1
+                FROM santa_id_message message
+                JOIN current_round ON message.round_id = current_round.id
+                WHERE message.member_id = $1
+            ) as has_sent_message
+        ),
+        remaining_count AS (
+            SELECT COUNT(*) as remaining
+            FROM room_member rm
+            WHERE rm.room_id = $1
+              AND rm.id NOT IN (
+                SELECT message.member_id
+                FROM santa_id_message message
+                JOIN current_round ON message.round_id = current_round.id
+            )
+        )
+        SELECT
+            user_status.has_sent_message,
+            remaining_count.remaining
+        FROM user_status, remaining_count
+        "#,
+        member_id,
+    )
+    .fetch_one(db)
+    .await
+    .map(|row| -> Result<MessageRoundStatus, sqlx::Error> {
+        let user_has_sent_message = row
+            .has_sent_message
+            .ok_or_else(|| sqlx::Error::RowNotFound)?;
+        let users_remaining = row.remaining.ok_or_else(|| sqlx::Error::RowNotFound)?;
+
+        Ok(MessageRoundStatus {
+            user_has_sent_message,
+            users_remaining,
+        })
+    })?
 }

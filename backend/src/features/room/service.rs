@@ -91,23 +91,36 @@ pub async fn handle_santa_id_message(
     member_id: &Uuid,
     message_content: &str,
 ) -> Result<(), AppError> {
-    // is the game in the correct phase? - throw an error if not
-    let game_phase = queries::get_game_phase_by_member(db, member_id).await?;
-    if game_phase != GamePhase::SantaId {
+    expect_game_phase(db, member_id, GamePhase::SantaId).await?;
+
+    let status = queries::get_message_round_status(db, member_id).await?;
+    if status.user_has_sent_message {
+        return Err(RoomError::AlreadySentMessage.into());
+    }
+
+    // create a new message in the current round
+    //queries::create_santa_id_message(db, member_id, message_content).await?;
+
+    // is the round finished? - start the next round
+    if status.users_remaining <= 1 {
+        //advance_message_round(db, member_id).await?;
+    }
+
+    Ok(())
+}
+
+async fn expect_game_phase(
+    db: &sqlx::PgPool,
+    member_id: &Uuid,
+    expected_phase: GamePhase,
+) -> Result<(), AppError> {
+    let current_phase = queries::get_game_phase_by_member(db, member_id).await?;
+    if current_phase != expected_phase {
         return Err(RoomError::InvalidGamePhase(ExpectedCurrent {
-            expected: GamePhase::SantaId,
-            current: game_phase,
+            expected: expected_phase,
+            current: current_phase,
         })
         .into());
     }
-
-    // has the user already sent a message in this round? - throw an error if they have
-
-    // create a new message in the current round
-    queries::create_santa_id_message(db, member_id, message_content).await?;
-
-    // is the round finished? - start the next round
-    // is the phase finished? - start the next phase
-
     Ok(())
 }

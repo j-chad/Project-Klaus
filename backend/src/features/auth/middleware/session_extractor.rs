@@ -2,7 +2,6 @@ use super::super::errors::AuthError;
 use super::super::models;
 use super::super::queries;
 use crate::error::AppError;
-use crate::features::auth::models::TokenType;
 use crate::state::SharedState;
 use axum::extract::FromRequestParts;
 use axum::http::header::AUTHORIZATION;

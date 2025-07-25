@@ -7,6 +7,7 @@ pub enum RoomError {
     RoomFull,
     RequiresOwnerPermission,
     InvalidGamePhase(ExpectedCurrent<GamePhase>),
+    AlreadySentMessage,
 }
 
 #[derive(Debug, serde::Serialize)]
@@ -33,12 +34,17 @@ impl From<RoomError> for AppError {
                 "This action requires owner permissions.",
                 StatusCode::FORBIDDEN,
             ),
-            RoomError::InvalidGamePhase(expectedCurrent) => AppError::new(
+            RoomError::InvalidGamePhase(expected_current) => AppError::new(
                 "INVALID_GAME_PHASE",
                 "The game is not in the correct phase for this action.",
                 StatusCode::BAD_REQUEST,
             )
-            .with_serializable_details(expectedCurrent),
+            .with_serializable_details(expected_current),
+            RoomError::AlreadySentMessage => AppError::new(
+                "ALREADY_SENT_MESSAGE",
+                "You have already sent a message in this round.",
+                StatusCode::BAD_REQUEST,
+            ),
         }
     }
 }

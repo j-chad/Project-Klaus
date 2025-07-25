@@ -1,4 +1,4 @@
-use super::{errors::AuthError, models::TokenType, queries, schemas, utils::cryptography};
+use super::{errors::AuthError, models::TokenType, queries, utils::cryptography};
 use crate::error::AppError;
 use std::net::IpAddr;
 

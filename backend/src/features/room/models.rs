@@ -20,3 +20,9 @@ pub enum GamePhase {
     Rejected,
     Completed,
 }
+
+#[derive(Debug)]
+pub struct MessageRoundStatus {
+    pub user_has_sent_message: bool,
+    pub users_remaining: i64,
+}

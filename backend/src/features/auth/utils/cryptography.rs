@@ -1,9 +1,9 @@
 use crate::features::auth::errors::AuthError;
 use base64::Engine;
 use base64::prelude::BASE64_STANDARD;
-use rand::distributions::{Alphanumeric, DistString, Distribution, Uniform};
+use rand::RngCore;
+use rand::distributions::{Distribution, Uniform};
 use rand::rngs::OsRng;
-use rand::{Rng, RngCore};
 use rsa::pkcs8::DecodePublicKey;
 use rsa::{Oaep, RsaPublicKey};
 use sha2::{Digest, Sha256, Sha512};

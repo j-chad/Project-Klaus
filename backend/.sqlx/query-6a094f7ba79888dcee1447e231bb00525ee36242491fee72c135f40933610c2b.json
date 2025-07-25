@@ -1,0 +1,37 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n        SELECT game_phase AS \"game_phase: GamePhase\"\n        FROM room\n        WHERE id = (SELECT room_id FROM room_member WHERE id = $1)\n        ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "game_phase: GamePhase",
+        "type_info": {
+          "Custom": {
+            "name": "game_phase",
+            "kind": {
+              "Enum": [
+                "lobby",
+                "santa_id",
+                "seed_commit",
+                "seed_reveal",
+                "verification",
+                "rejected",
+                "completed"
+              ]
+            }
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "6a094f7ba79888dcee1447e231bb00525ee36242491fee72c135f40933610c2b"
+}
