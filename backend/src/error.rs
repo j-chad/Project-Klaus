@@ -43,16 +43,20 @@ impl AppError {
         }
     }
 
-    pub fn with_details(mut self, details: Value) -> Self {
-        self.details = Some(details);
-        self
-    }
-
-    pub fn with_serializable_details<T: serde::Serialize>(mut self, details: T) -> Self {
+    pub fn with_details<T: serde::Serialize>(mut self, details: T) -> Self {
         self.details = serde_json::to_value(details)
             .map_err(|err| tracing::error!(err=?err, "Failed to serialize details for AppError"))
             .ok();
         self
+    }
+
+    /// useful when an error should never happen but needs to be handled
+    pub fn unknown_error() -> Self {
+        AppError::new(
+            "UNKNOWN_ERROR",
+            "An internal server error occurred. Please try again later.",
+            StatusCode::INTERNAL_SERVER_ERROR,
+        )
     }
 }
 
@@ -60,12 +64,7 @@ impl From<anyhow::Error> for AppError {
     fn from(err: anyhow::Error) -> Self {
         // log error
         tracing::error!(err=?err, "An unknown internal server error occurred.");
-
-        AppError::new(
-            "UNKNOWN_ERROR",
-            "An internal server error occurred. Please try again later.",
-            StatusCode::INTERNAL_SERVER_ERROR,
-        )
+        AppError::unknown_error()
     }
 }
 
@@ -91,12 +90,11 @@ impl From<sqlx::Error> for AppError {
 
 impl From<validator::ValidationErrors> for AppError {
     fn from(err: validator::ValidationErrors) -> Self {
-        let details = serde_json::to_value(&err).unwrap_or_default();
         AppError::new(
             "VALIDATION_ERROR",
             "The request data is invalid.",
             StatusCode::BAD_REQUEST,
         )
-        .with_details(details)
+        .with_details(err)
     }
 }
