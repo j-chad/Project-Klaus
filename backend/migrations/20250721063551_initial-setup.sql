@@ -33,8 +33,8 @@ CREATE TABLE room (
     deleted_at TIMESTAMP WITH TIME ZONE DEFAULT NULL
 
     CHECK ( -- game_phase can only be waiting if iteration is 0
-      (game_phase = 'waiting' AND iteration = 0) OR
-      (game_phase != 'waiting' AND iteration > 0)
+      (iteration = 0) OR
+      (iteration > 0 AND game_phase != 'waiting')
     )
 );
 
