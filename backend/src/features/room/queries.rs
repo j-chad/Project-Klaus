@@ -163,7 +163,7 @@ pub async fn get_message_round_status(
             WHERE id = (SELECT room_id FROM room_member WHERE id = $1)
         ),
         current_round AS (
-            SELECT id
+            SELECT id, round_number
             FROM santa_id_round
             WHERE room_id = (SELECT id FROM members_room)
             ORDER BY round_number DESC
@@ -180,32 +180,40 @@ pub async fn get_message_round_status(
         remaining_count AS (
             SELECT COUNT(*) as remaining
             FROM room_member rm
-            WHERE rm.room_id = $1
+            WHERE rm.room_id = (SELECT id FROM members_room)
               AND rm.id NOT IN (
                 SELECT message.member_id
                 FROM santa_id_message message
                 JOIN current_round ON message.round_id = current_round.id
             )
+        ),
+        total_users AS (
+            SELECT COUNT(*) as total
+            FROM room_member
+            WHERE room_id = (SELECT id FROM members_room)
         )
         SELECT
+            current_round.round_number,
             members_room.id AS room_id,
             user_status.has_sent_message,
-            remaining_count.remaining
-        FROM user_status, remaining_count, members_room
+            remaining_count.remaining,
+            total_users.total AS total_users
+        FROM user_status, remaining_count, members_room, current_round, total_users
         "#,
         member_id,
     )
     .fetch_one(db)
     .await
     .map(|row| -> Result<MessageRoundStatus, sqlx::Error> {
-        let user_has_sent_message = row
-            .has_sent_message
-            .ok_or_else(|| sqlx::Error::RowNotFound)?;
-        let users_remaining = row.remaining.ok_or_else(|| sqlx::Error::RowNotFound)?;
+        let user_has_sent_message = row.has_sent_message.ok_or(sqlx::Error::RowNotFound)?;
+        let users_remaining = row.remaining.ok_or(sqlx::Error::RowNotFound)?;
+        let total_users = row.total_users.ok_or(sqlx::Error::RowNotFound)?;
 
         Ok(MessageRoundStatus {
             user_has_sent_message,
             users_remaining,
+            total_users,
+            current_round: row.round_number,
             room_id: row.room_id,
         })
     })?
@@ -233,6 +241,26 @@ pub async fn create_santa_id_message(
         room_id,
         member_id,
         message_contents
+    )
+    .execute(db)
+    .await?;
+
+    Ok(())
+}
+
+pub async fn set_game_phase(
+    db: &PgPool,
+    room_id: &Uuid,
+    game_phase: GamePhase,
+) -> Result<(), sqlx::Error> {
+    sqlx::query!(
+        r#"
+        UPDATE room
+        SET game_phase = $2
+        WHERE id = $1
+        "#,
+        room_id,
+        game_phase as _
     )
     .execute(db)
     .await?;

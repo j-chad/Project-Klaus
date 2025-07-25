@@ -71,8 +71,8 @@ CREATE TYPE token_type AS ENUM (
 );
 
 CREATE TABLE token (
-    id          UUID PRIMARY KEY         DEFAULT gen_random_uuid(),
-    member_id  UUID    NOT NULL REFERENCES room_member(id) ON DELETE CASCADE,
+    id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    member_id   UUID NOT NULL REFERENCES room_member(id) ON DELETE CASCADE,
 
     token       TEXT UNIQUE NOT NULL,
     type        token_type NOT NULL,

@@ -25,5 +25,7 @@ pub enum GamePhase {
 pub struct MessageRoundStatus {
     pub room_id: uuid::Uuid,
     pub user_has_sent_message: bool,
+    pub current_round: i32,
+    pub total_users: i64,
     pub users_remaining: i64,
 }

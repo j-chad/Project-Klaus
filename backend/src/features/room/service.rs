@@ -2,7 +2,7 @@ use super::errors::{ExpectedCurrent, RoomError};
 use super::queries;
 use crate::error::AppError;
 use crate::features::auth;
-use crate::features::room::models::GamePhase;
+use crate::features::room::models::{GamePhase, MessageRoundStatus};
 use tracing::error;
 use uuid::Uuid;
 
@@ -105,10 +105,31 @@ pub async fn handle_santa_id_message(
     queries::create_santa_id_message(db, &status.room_id, member_id, message_contents).await?;
 
     if status.users_remaining == 1 {
-        //advance_message_round(db, member_id).await?;
+        advance_message_round(
+            db,
+            &status.room_id,
+            status.current_round,
+            status.total_users as i32,
+        )
+        .await?;
     }
 
     Ok(())
+}
+
+async fn advance_message_round(
+    db: &sqlx::PgPool,
+    room_id: &Uuid,
+    current_round: i32,
+    members_in_room: i32,
+) -> Result<(), AppError> {
+    if (current_round == members_in_room) {
+        return queries::set_game_phase(db, room_id, GamePhase::SeedCommit)
+            .await
+            .map_err(|e| e.into());
+    }
+
+    queries::advance_message_round(db, room_id, current_round).await
 }
 
 async fn expect_game_phase(
