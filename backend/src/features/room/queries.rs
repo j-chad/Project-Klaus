@@ -267,3 +267,22 @@ pub async fn set_game_phase(
 
     Ok(())
 }
+
+pub async fn new_message_round(
+    db: &PgPool,
+    room_id: &Uuid,
+    round_number: i32,
+) -> Result<(), sqlx::Error> {
+    sqlx::query!(
+        r#"
+        INSERT INTO santa_id_round (room_id, round_number)
+        VALUES ($1, $2)
+        "#,
+        room_id,
+        round_number
+    )
+    .execute(db)
+    .await?;
+
+    Ok(())
+}

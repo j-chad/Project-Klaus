@@ -123,13 +123,16 @@ async fn advance_message_round(
     current_round: i32,
     members_in_room: i32,
 ) -> Result<(), AppError> {
+    // Once N rounds have been completed - all messages should be decrypted.
     if (current_round == members_in_room) {
         return queries::set_game_phase(db, room_id, GamePhase::SeedCommit)
             .await
-            .map_err(|e| e.into());
+            .map_err(std::convert::Into::into);
     }
 
-    queries::advance_message_round(db, room_id, current_round).await
+    queries::new_message_round(db, room_id, current_round + 1)
+        .await
+        .map_err(std::convert::Into::into)
 }
 
 async fn expect_game_phase(
