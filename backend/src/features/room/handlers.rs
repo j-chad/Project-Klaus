@@ -1,4 +1,4 @@
-use super::schemas;
+use super::{schemas, service};
 use crate::error::AppError;
 use crate::features::auth;
 use crate::state::SharedState;
@@ -77,4 +77,11 @@ pub async fn join_room(
         cookies.add(session_cookie),
         Json(auth::schemas::EphemeralTokenResponse { ephemeral_token }),
     ))
+}
+
+pub async fn start_game(
+    State(state): State<SharedState>,
+    auth::Session(session): auth::Session,
+) -> Result<impl IntoResponse, AppError> {
+    service::requires_owner_permission(&state.db, &session.member_id)?;
 }

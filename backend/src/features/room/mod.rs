@@ -1,5 +1,8 @@
+mod errors;
 mod handlers;
+mod queries;
 mod schemas;
+mod service;
 mod websocket;
 
 use crate::state::SharedState;
@@ -11,6 +14,7 @@ pub fn build_router() -> axum::Router<SharedState> {
         .route("/ws", any(websocket::upgrade_handler))
         .route("/create", post(handlers::create_room))
         .route("/join", post(handlers::join_room))
+        .route("/start", post(handlers::start_game))
 }
 
 #[derive(Deserialize)]

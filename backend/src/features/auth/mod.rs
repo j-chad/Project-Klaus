@@ -10,6 +10,8 @@ pub(crate) mod schemas;
 pub(crate) mod service;
 pub(crate) mod utils;
 
+pub use middleware::Session;
+
 pub fn build_router() -> axum::Router<SharedState> {
     axum::Router::new()
         .route("/logout", post(handlers::logout))
