@@ -91,3 +91,13 @@ pub async fn start_game(
 
     Ok(StatusCode::NO_CONTENT)
 }
+
+pub async fn handle_santa_id_message(
+    State(state): State<SharedState>,
+    auth::Session(session): auth::Session,
+    Json(body): Json<schemas::SantaIDMessage>,
+) -> Result<impl IntoResponse, AppError> {
+    service::handle_santa_id_message(&state.db, &session.member_id, &body.message_content).await?;
+
+    Ok(StatusCode::NO_CONTENT)
+}

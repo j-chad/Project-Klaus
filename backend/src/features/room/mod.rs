@@ -16,6 +16,7 @@ pub fn build_router() -> axum::Router<SharedState> {
         .route("/create", post(handlers::create_room))
         .route("/join", post(handlers::join_room))
         .route("/start", post(handlers::start_game))
+        .route("/publish/message", post(handlers::handle_santa_id_message))
 }
 
 #[derive(Deserialize)]
