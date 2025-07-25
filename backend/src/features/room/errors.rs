@@ -1,10 +1,18 @@
 use crate::error::AppError;
+use crate::features::room::models::GamePhase;
 use axum::http::StatusCode;
 
 pub enum RoomError {
     RoomNotFound,
     RoomFull,
     RequiresOwnerPermission,
+    InvalidGamePhase(ExpectedCurrent<GamePhase>),
+}
+
+#[derive(Debug, serde::Serialize)]
+pub struct ExpectedCurrent<T> {
+    pub(crate) expected: T,
+    pub(crate) current: T,
 }
 
 impl From<RoomError> for AppError {
@@ -25,6 +33,12 @@ impl From<RoomError> for AppError {
                 "This action requires owner permissions.",
                 StatusCode::FORBIDDEN,
             ),
+            RoomError::InvalidGamePhase(expectedCurrent) => AppError::new(
+                "INVALID_GAME_PHASE",
+                "The game is not in the correct phase for this action.",
+                StatusCode::BAD_REQUEST,
+            )
+            .with_details(expectedCurrent),
         }
     }
 }
