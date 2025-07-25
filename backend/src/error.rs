@@ -43,8 +43,15 @@ impl AppError {
         }
     }
 
-    pub fn with_details(mut self, details: impl Serialize) -> Self {
+    pub fn with_details(mut self, details: Value) -> Self {
         self.details = Some(details);
+        self
+    }
+
+    pub fn with_serializable_details<T: serde::Serialize>(mut self, details: T) -> Self {
+        self.details = serde_json::to_value(details)
+            .map_err(|err| tracing::error!(err=?err, "Failed to serialize details for AppError"))
+            .ok();
         self
     }
 }

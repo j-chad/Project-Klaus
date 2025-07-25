@@ -38,7 +38,7 @@ impl From<RoomError> for AppError {
                 "The game is not in the correct phase for this action.",
                 StatusCode::BAD_REQUEST,
             )
-            .with_details(expectedCurrent),
+            .with_serializable_details(expectedCurrent),
         }
     }
 }
