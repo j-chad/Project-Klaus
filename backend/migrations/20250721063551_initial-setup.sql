@@ -102,7 +102,7 @@ CREATE TABLE santa_id_message (
     round_id    UUID    NOT NULL REFERENCES santa_id_round(id) ON DELETE CASCADE,
     member_id   UUID    NOT NULL REFERENCES room_member(id) ON DELETE CASCADE,
 
-    content     TEXT NOT NULL,
+    content     TEXT ARRAY NOT NULL, -- it is possible that a member decrypts multiple messages per round.
 
     created_at  TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL,
 
