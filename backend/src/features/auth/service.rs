@@ -1,6 +1,4 @@
-use super::{
-    errors::AuthError, models::TokenType, queries, schemas::JoinRoomRequest, utils::cryptography,
-};
+use super::{errors::AuthError, models::TokenType, queries, schemas, utils::cryptography};
 use crate::error::AppError;
 use std::net::IpAddr;
 
@@ -10,18 +8,21 @@ static CHALLENGE_TOKEN_DURATION: chrono::Duration = chrono::Duration::minutes(2)
 
 pub async fn create_room(
     pool: &sqlx::PgPool,
-    payload: &super::schemas::CreateRoomRequest,
+    room_name: &str,
+    username: &str,
+    public_key: &str,
+    max_players: Option<u32>,
 ) -> Result<(uuid::Uuid, String), AppError> {
-    let (public_key, fingerprint) = cryptography::decode_public_key(&payload.public_key)?;
+    let (public_key, fingerprint) = cryptography::decode_public_key(public_key)?;
 
     let room_code = cryptography::generate_room_code();
 
     let user_id = queries::new_room_and_owner(
         pool,
-        &payload.room_name,
+        room_name,
         &room_code,
-        payload.max_players,
-        &payload.username,
+        max_players,
+        username,
         &fingerprint,
         &public_key,
     )
@@ -33,9 +34,11 @@ pub async fn create_room(
 /// Creates a new room member and returns the user ID.
 pub async fn join_room(
     pool: &sqlx::PgPool,
-    payload: &JoinRoomRequest,
+    room_id: &str,
+    username: &str,
+    public_key: &str,
 ) -> Result<uuid::Uuid, AppError> {
-    let room = queries::get_room_by_join_code(pool, &payload.room_id)
+    let room = queries::get_room_by_join_code(pool, room_id)
         .await?
         .ok_or(AuthError::RoomNotFound)?;
 
@@ -51,10 +54,10 @@ pub async fn join_room(
         }
     }
 
-    let (public_key, fingerprint) = cryptography::decode_public_key(&payload.public_key)?;
+    let (public_key, fingerprint) = cryptography::decode_public_key(public_key)?;
 
     let user_id =
-        queries::new_room_member(pool, room.id, &payload.name, &fingerprint, &public_key).await?;
+        queries::new_room_member(pool, room.id, username, &fingerprint, &public_key).await?;
     Ok(user_id)
 }
 

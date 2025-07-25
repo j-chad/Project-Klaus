@@ -1,0 +1,26 @@
+use serde::{Deserialize, Serialize};
+use validator::Validate;
+
+#[derive(Validate, Deserialize)]
+pub struct CreateRoomRequest {
+    #[validate(length(min = 1, max = 30))]
+    pub room_name: String,
+    #[validate(length(min = 1, max = 30))]
+    pub username: String,
+    pub max_players: Option<u32>,
+    pub public_key: String, // DER encoded public key
+}
+
+#[derive(Serialize)]
+pub struct CreateRoomResponse {
+    pub room_id: String,
+    pub ephemeral_token: String,
+}
+
+#[derive(Validate, Deserialize)]
+pub struct JoinRoomRequest {
+    pub room_id: String,
+    #[validate(length(min = 1, max = 30))]
+    pub name: String,
+    pub public_key: String, // DER encoded public key
+}
