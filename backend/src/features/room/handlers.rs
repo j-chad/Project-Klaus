@@ -19,7 +19,7 @@ pub async fn create_room(
 ) -> Result<impl IntoResponse, AppError> {
     body.validate()?;
 
-    let (user_id, room_code) = auth::service::create_room(
+    let (user_id, room_code) = service::create_room(
         &state.db,
         &body.room_name,
         &body.username,
@@ -59,7 +59,7 @@ pub async fn join_room(
     body.validate()?;
 
     let user_id =
-        auth::service::join_room(&state.db, &body.room_id, &body.name, &body.public_key).await?;
+        service::join_room(&state.db, &body.room_id, &body.name, &body.public_key).await?;
 
     let ip_address = Some(addr.ip());
     let user_agent = headers.get("User-Agent").and_then(|h| h.to_str().ok());
@@ -87,7 +87,7 @@ pub async fn start_game(
     service::requires_owner_permission(&state.db, &session.member_id).await?;
 
     service::start_game(&state.db, &session.member_id).await?;
-    //service::handle_santa_id_message(&state.db, &session.member_id, &body.message_content).await?;
+    service::handle_santa_id_message(&state.db, &session.member_id, &body.message_content).await?;
 
     Ok(StatusCode::NO_CONTENT)
 }
