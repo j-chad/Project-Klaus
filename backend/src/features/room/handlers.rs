@@ -82,6 +82,12 @@ pub async fn join_room(
 pub async fn start_game(
     State(state): State<SharedState>,
     auth::Session(session): auth::Session,
+    Json(body): Json<schemas::SantaIDMessage>,
 ) -> Result<impl IntoResponse, AppError> {
-    service::requires_owner_permission(&state.db, &session.member_id)?;
+    service::requires_owner_permission(&state.db, &session.member_id).await?;
+
+    service::start_game(&state.db, &session.room_id).await?;
+    service::handle_santa_id_message(&state.db, &session.member_id, &body.message_content).await?;
+
+    Ok(StatusCode::NO_CONTENT)
 }

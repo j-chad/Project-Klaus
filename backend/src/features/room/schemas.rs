@@ -24,3 +24,8 @@ pub struct JoinRoomRequest {
     pub name: String,
     pub public_key: String, // DER encoded public key
 }
+
+#[derive(Deserialize)]
+pub struct SantaIDMessage {
+    pub message_content: String,
+}
