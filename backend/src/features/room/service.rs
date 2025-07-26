@@ -3,6 +3,9 @@ use super::queries;
 use crate::error::AppError;
 use crate::features::auth;
 use crate::features::room::models::GamePhase;
+use base64::Engine;
+use base64::prelude::BASE64_STANDARD;
+use sha2::Digest;
 use tracing::error;
 use uuid::Uuid;
 
@@ -127,6 +130,28 @@ pub async fn handle_santa_id_message(
     Ok(())
 }
 
+pub async fn reveal_seed(db: &sqlx::PgPool, member_id: &Uuid, seed: &str) -> Result<(), AppError> {
+    expect_game_phase(db, member_id, GamePhase::SeedReveal).await?;
+
+    let seed_commitment = queries::get_seed_commitment_for_member(db, member_id).await?;
+    let seed_hash = calculate_seed_hash(seed)?;
+    if seed_commitment != seed_hash {
+        return Err(RoomError::LiarLiarPantsOnFire(
+            "Seed commitment does not match provided seed".to_string(),
+        )
+        .into());
+    }
+
+    let remaining_seed_reveals = queries::reveal_seed(db, member_id, seed).await?;
+
+    if remaining_seed_reveals == 0 {
+        let room_id = queries::get_room_id_by_member(db, member_id).await?;
+        queries::set_game_phase(db, &room_id, GamePhase::Verification).await?;
+    }
+
+    Ok(())
+}
+
 async fn advance_message_round(
     db: &sqlx::PgPool,
     room_id: &Uuid,
@@ -159,4 +184,12 @@ async fn expect_game_phase(
         .into());
     }
     Ok(())
+}
+
+fn calculate_seed_hash(seed: &str) -> Result<String, AppError> {
+    let bytes = BASE64_STANDARD
+        .decode(seed)
+        .map_err(|_| RoomError::InvalidSeed)?;
+
+    Ok(auth::utils::cryptography::sha256_hex(&bytes))
 }

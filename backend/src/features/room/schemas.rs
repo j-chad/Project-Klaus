@@ -28,6 +28,11 @@ pub struct JoinRoomRequest {
 }
 
 #[derive(Deserialize)]
-pub struct SantaIDMessage {
+pub struct SantaIDMessageRequest {
     pub message_content: Vec<String>,
+}
+
+#[derive(Deserialize)]
+pub struct SeedRevealRequest {
+    pub seed: String,
 }

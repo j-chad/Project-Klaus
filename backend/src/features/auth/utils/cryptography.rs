@@ -28,20 +28,17 @@ pub fn decode_public_key(public_key: &str) -> Result<(Vec<u8>, String), AuthErro
     // validate the key - we just need the bytes for now.
     RsaPublicKey::from_public_key_der(&public_key_bytes).or(Err(AuthError::InvalidPublicKey))?;
 
-    let fingerprint = calculate_key_fingerprint(&public_key_bytes);
+    let fingerprint = sha256_hex(&public_key_bytes);
 
     Ok((public_key_bytes, fingerprint))
 }
 
-pub fn calculate_key_fingerprint(public_key_bytes: &[u8]) -> String {
+pub fn sha256_hex(bytes: &[u8]) -> String {
     let mut hasher = Sha256::new();
-    hasher.update(public_key_bytes);
+    hasher.update(bytes);
     let fingerprint = hasher.finalize();
 
-    fingerprint.iter().fold(String::new(), |mut acc, &b| {
-        let _ = write!(acc, "{b:02x}");
-        acc
-    })
+    array_to_hex_string(&fingerprint)
 }
 
 pub fn encrypt_challenge_token(token: &str, public_key_bytes: &[u8]) -> Result<String, AuthError> {
@@ -67,4 +64,11 @@ pub fn generate_room_code() -> String {
         .take(ROOM_CODE_LENGTH)
         .map(|i| ROOM_CODE_CHARSET[i] as char)
         .collect()
+}
+
+fn array_to_hex_string(array: &[u8]) -> String {
+    array.iter().fold(String::new(), |mut acc, &b| {
+        let _ = write!(acc, "{b:02x}");
+        acc
+    })
 }

@@ -8,6 +8,8 @@ pub enum RoomError {
     RequiresOwnerPermission,
     InvalidGamePhase(ExpectedCurrent<GamePhase>),
     AlreadySentMessage,
+    InvalidSeed,
+    LiarLiarPantsOnFire(String),
 }
 
 #[derive(Debug, serde::Serialize)]
@@ -45,6 +47,17 @@ impl From<RoomError> for AppError {
                 "You have already sent a message in this round.",
                 StatusCode::BAD_REQUEST,
             ),
+            RoomError::InvalidSeed => AppError::new(
+                "INVALID_SEED",
+                "The provided seed is invalid.",
+                StatusCode::BAD_REQUEST,
+            ),
+            RoomError::LiarLiarPantsOnFire(reason) => AppError::new(
+                "LIAR_LIAR_PANTS_ON_FIRE",
+                "Something doesn't add up",
+                StatusCode::BAD_REQUEST,
+            )
+            .with_details(reason),
         }
     }
 }

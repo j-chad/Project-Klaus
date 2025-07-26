@@ -290,3 +290,34 @@ pub async fn new_message_round(
 
     Ok(())
 }
+
+pub async fn get_seed_commitment_for_member(
+    db: &PgPool,
+    member_id: &Uuid,
+) -> Result<String, sqlx::Error> {
+    sqlx::query!(
+        r#"
+        SELECT seed_commitment
+        FROM room_member
+        WHERE id = $1
+        "#,
+        member_id
+    )
+    .fetch_one(db)
+    .await
+    .map(|row| row.seed_commitment)
+}
+
+pub async fn get_room_id_by_member(db: &PgPool, member_id: &Uuid) -> Result<Uuid, sqlx::Error> {
+    sqlx::query!(
+        r#"
+        SELECT room_id
+        FROM room_member
+        WHERE id = $1
+        "#,
+        member_id
+    )
+    .fetch_one(db)
+    .await
+    .map(|row| row.room_id)
+}

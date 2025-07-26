@@ -89,7 +89,7 @@ pub async fn join_room(
 pub async fn start_game(
     State(state): State<SharedState>,
     auth::Session(session): auth::Session,
-    Json(body): Json<schemas::SantaIDMessage>,
+    Json(body): Json<schemas::SantaIDMessageRequest>,
 ) -> Result<impl IntoResponse, AppError> {
     service::requires_owner_permission(&state.db, &session.member_id).await?;
 
@@ -102,9 +102,19 @@ pub async fn start_game(
 pub async fn handle_santa_id_message(
     State(state): State<SharedState>,
     auth::Session(session): auth::Session,
-    Json(body): Json<schemas::SantaIDMessage>,
+    Json(body): Json<schemas::SantaIDMessageRequest>,
 ) -> Result<impl IntoResponse, AppError> {
     service::handle_santa_id_message(&state.db, &session.member_id, &body.message_content).await?;
+
+    Ok(StatusCode::NO_CONTENT)
+}
+
+pub async fn handle_seed_reveal(
+    State(state): State<SharedState>,
+    auth::Session(session): auth::Session,
+    Json(body): Json<schemas::SeedRevealRequest>,
+) -> Result<impl IntoResponse, AppError> {
+    service::reveal_seed(&state.db, &session.member_id, &body.seed).await?;
 
     Ok(StatusCode::NO_CONTENT)
 }
