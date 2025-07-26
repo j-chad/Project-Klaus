@@ -1,0 +1,23 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n        UPDATE room_member\n        SET seed = $2\n        WHERE id = $1\n        RETURNING (\n            SELECT COUNT(*)\n            FROM room_member\n            WHERE room_id = (SELECT room_id FROM room_member WHERE id = $1)\n              AND seed IS NULL\n        ) AS remaining_users\n        ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "remaining_users",
+        "type_info": "Int8"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Text"
+      ]
+    },
+    "nullable": [
+      null
+    ]
+  },
+  "hash": "895e7d0b100b1a676f9d14f907cb6dc3a9991186d242c8f46ec66e821e7cb139"
+}

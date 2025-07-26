@@ -52,7 +52,7 @@ CREATE TABLE room_member (
     is_owner    BOOLEAN NOT NULL         DEFAULT FALSE,
 
     seed_commitment TEXT NOT NULL, -- hash to prove the member has committed to a seed before revealing it
-    seed INT,
+    seed TEXT,
 
     rejected_proof INT,
     result_acknowledged BOOLEAN NOT NULL DEFAULT FALSE, -- whether the member has acknowledged that the game is now complete/rejected

@@ -5,7 +5,6 @@ use crate::features::auth;
 use crate::features::room::models::GamePhase;
 use base64::Engine;
 use base64::prelude::BASE64_STANDARD;
-use sha2::Digest;
 use tracing::error;
 use uuid::Uuid;
 
@@ -142,7 +141,9 @@ pub async fn reveal_seed(db: &sqlx::PgPool, member_id: &Uuid, seed: &str) -> Res
         .into());
     }
 
-    let remaining_seed_reveals = queries::reveal_seed(db, member_id, seed).await?;
+    let remaining_seed_reveals = queries::reveal_seed(db, member_id, seed)
+        .await?
+        .ok_or(AppError::unknown_error())?;
 
     if remaining_seed_reveals == 0 {
         let room_id = queries::get_room_id_by_member(db, member_id).await?;

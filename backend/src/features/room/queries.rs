@@ -321,3 +321,28 @@ pub async fn get_room_id_by_member(db: &PgPool, member_id: &Uuid) -> Result<Uuid
     .await
     .map(|row| row.room_id)
 }
+
+pub async fn reveal_seed(
+    db: &PgPool,
+    member_id: &Uuid,
+    seed: &str,
+) -> Result<Option<i32>, sqlx::Error> {
+    sqlx::query!(
+        r#"
+        UPDATE room_member
+        SET seed = $2
+        WHERE id = $1
+        RETURNING (
+            SELECT COUNT(*)
+            FROM room_member
+            WHERE room_id = (SELECT room_id FROM room_member WHERE id = $1)
+              AND seed IS NULL
+        ) AS remaining_users
+        "#,
+        member_id,
+        seed
+    )
+    .fetch_one(db)
+    .await
+    .map(|row| row.remaining_users.map(|count| count as i32))
+}
