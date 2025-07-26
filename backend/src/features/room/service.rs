@@ -3,6 +3,7 @@ use super::queries;
 use crate::error::AppError;
 use crate::features::auth;
 use crate::features::room::models::GamePhase;
+use crate::features::room::schemas::VerificationRequest;
 use base64::Engine;
 use base64::prelude::BASE64_STANDARD;
 use tracing::error;
@@ -133,7 +134,7 @@ pub async fn reveal_seed(db: &sqlx::PgPool, member_id: &Uuid, seed: &str) -> Res
     expect_game_phase(db, member_id, GamePhase::SeedReveal).await?;
 
     let seed_commitment = queries::get_seed_commitment_for_member(db, member_id).await?;
-    let seed_hash = calculate_seed_hash(seed)?;
+    let seed_hash = base64_hash(seed).map_err(|_| RoomError::InvalidSeed)?;
     if seed_commitment != seed_hash {
         return Err(RoomError::LiarLiarPantsOnFire(
             "Seed commitment does not match provided seed".to_string(),
@@ -151,6 +152,70 @@ pub async fn reveal_seed(db: &sqlx::PgPool, member_id: &Uuid, seed: &str) -> Res
         let room_id = queries::get_room_id_by_member(db, member_id).await?;
         queries::set_game_phase(db, &room_id, GamePhase::Verification).await?;
     }
+
+    Ok(())
+}
+
+pub async fn handle_verification(
+    db: &sqlx::PgPool,
+    member_id: &Uuid,
+    verification_request: &VerificationRequest,
+) -> Result<(), AppError> {
+    expect_game_phase(db, member_id, GamePhase::Verification).await?;
+
+    // if rejected - check if the proof is valid
+    // if so - set the game phase to Rejected
+    // if accepted - update the member's verification status
+    // if all members have accepted, set the game phase to Complete
+
+    if let VerificationRequest::Rejected { proof } = verification_request {
+        return handle_verification_rejection(db, member_id, proof).await;
+    }
+
+    let remaining_verifications = queries::mark_as_verified(db, member_id)
+        .await?
+        .ok_or(AppError::unknown_error())?;
+
+    // TODO: check if the returning value is before or after the update.
+    //       I suspect it is before
+    if remaining_verifications == 1 {
+        let room_id = queries::get_room_id_by_member(db, member_id).await?;
+        queries::set_game_phase(db, &room_id, GamePhase::Completed).await?;
+    }
+
+    Ok(())
+}
+
+async fn handle_verification_rejection(
+    db: &sqlx::PgPool,
+    member_id: &Uuid,
+    proof: &str,
+) -> Result<(), AppError> {
+    let hash = base64_hash(proof).map_err(|_| RoomError::InvalidRejectionProof)?;
+
+    let room_id = queries::get_room_id_by_member(db, member_id).await?;
+
+    // check hash is a valid santa id
+    // let santa_ids = queries::get_santa_ids(db, &room_id).await?;
+    // if !santa_ids.contains(&hash) {
+    //     return Err(RoomError::LiarLiarPantsOnFire(
+    //         "Provided rejection proof does not match any Santa ID".to_string(),
+    //     )
+    //     .into());
+    // }
+
+    // construct the bijection and verify self-assignment
+    // let bijection_seed = queries::get_bijection_seed(db, &room_id).await?;
+    // if !bijection_seed.verify_self_assignment(&hash, member_id) {
+    //     return Err(RoomError::LiarLiarPantsOnFire(
+    //         "Rejection proof does not match the bijection seed".to_string(),
+    //     )
+    //     .into());
+    // }
+
+    // proof is valid
+    queries::mark_as_rejected(db, member_id, proof).await?;
+    queries::set_game_phase(db, &room_id, GamePhase::Rejected).await?;
 
     Ok(())
 }
@@ -189,10 +254,8 @@ async fn expect_game_phase(
     Ok(())
 }
 
-fn calculate_seed_hash(seed: &str) -> Result<String, AppError> {
-    let bytes = BASE64_STANDARD
-        .decode(seed)
-        .map_err(|_| RoomError::InvalidSeed)?;
+fn base64_hash(base64_str: &str) -> Result<String, base64::DecodeError> {
+    let bytes = BASE64_STANDARD.decode(base64_str)?;
 
     Ok(auth::utils::cryptography::sha256_hex(&bytes))
 }

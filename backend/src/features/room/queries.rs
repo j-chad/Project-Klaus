@@ -346,3 +346,23 @@ pub async fn reveal_seed(
     .await
     .map(|row| row.remaining_users.map(|count| count as i32))
 }
+
+pub async fn mark_as_verified(db: &PgPool, member_id: &Uuid) -> Result<Option<i32>, sqlx::Error> {
+    sqlx::query!(
+        r#"
+        UPDATE room_member
+        SET verification_status = TRUE
+        WHERE id = $1
+        RETURNING (
+            SELECT COUNT(*)
+            FROM room_member
+            WHERE room_id = (SELECT room_id FROM room_member WHERE id = $1)
+              AND verification_status IS FALSE
+        ) AS remaining_users
+        "#,
+        member_id
+    )
+    .fetch_one(db)
+    .await
+    .map(|row| row.remaining_users.map(|count| count as i32))
+}

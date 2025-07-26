@@ -54,7 +54,8 @@ CREATE TABLE room_member (
     seed_commitment TEXT NOT NULL, -- hash to prove the member has committed to a seed before revealing it
     seed TEXT,
 
-    rejected_proof INT,
+    rejected_proof TEXT,
+    verification_status BOOLEAN NOT NULL DEFAULT FALSE, -- whether the member has verified their santa ID
     result_acknowledged BOOLEAN NOT NULL DEFAULT FALSE, -- whether the member has acknowledged that the game is now complete/rejected
 
     joined_at   TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,

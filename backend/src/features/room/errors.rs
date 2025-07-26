@@ -10,6 +10,7 @@ pub enum RoomError {
     AlreadySentMessage,
     InvalidSeed,
     LiarLiarPantsOnFire(String),
+    InvalidRejectionProof,
 }
 
 #[derive(Debug, serde::Serialize)]
@@ -58,6 +59,11 @@ impl From<RoomError> for AppError {
                 StatusCode::BAD_REQUEST,
             )
             .with_details(reason),
+            RoomError::InvalidRejectionProof => AppError::new(
+                "INVALID_REJECTION_PROOF",
+                "The provided rejection proof is invalid.",
+                StatusCode::BAD_REQUEST,
+            ),
         }
     }
 }

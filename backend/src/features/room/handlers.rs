@@ -118,3 +118,13 @@ pub async fn handle_seed_reveal(
 
     Ok(StatusCode::NO_CONTENT)
 }
+
+pub async fn handle_verification(
+    State(state): State<SharedState>,
+    auth::Session(session): auth::Session,
+    Json(body): Json<schemas::VerificationRequest>,
+) -> Result<impl IntoResponse, AppError> {
+    service::handle_verification(&state.db, &session.member_id, &body).await?;
+
+    Ok(StatusCode::NO_CONTENT)
+}

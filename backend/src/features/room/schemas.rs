@@ -36,3 +36,10 @@ pub struct SantaIDMessageRequest {
 pub struct SeedRevealRequest {
     pub seed: String,
 }
+
+#[derive(Deserialize)]
+#[serde(tag = "status", rename_all = "lowercase")]
+pub enum VerificationRequest {
+    Accept,
+    Rejected { proof: String },
+}
