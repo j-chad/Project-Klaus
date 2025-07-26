@@ -4,6 +4,7 @@ mod models;
 mod queries;
 mod schemas;
 mod service;
+mod utils;
 mod websocket;
 
 use crate::state::SharedState;

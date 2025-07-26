@@ -5,7 +5,6 @@ use axum::Router;
 mod auth;
 mod health;
 mod room;
-mod utils;
 
 pub fn build_router() -> Router<SharedState> {
     Router::new().nest("/v1", build_v1_router())

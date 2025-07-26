@@ -1,5 +1,5 @@
 use super::errors::{ExpectedCurrent, RoomError};
-use super::queries;
+use super::{queries, utils};
 use crate::error::AppError;
 use crate::features::auth;
 use crate::features::room::models::GamePhase;
@@ -205,7 +205,8 @@ async fn handle_verification_rejection(
     }
 
     // construct the bijection and verify self-assignment
-    let bijection_seed = queries::get_seed_reveals(db, &room_id).await?;
+    let seed_components = queries::get_seed_reveals(db, &room_id).await?;
+    let seed = utils::bijection::combine_seed_components(&seed_components);
     // if !bijection_seed.verify_self_assignment(&hash, member_id) {
     //     return Err(RoomError::LiarLiarPantsOnFire(
     //         "Rejection proof does not match the bijection seed".to_string(),
