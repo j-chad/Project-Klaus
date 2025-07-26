@@ -196,13 +196,13 @@ async fn handle_verification_rejection(
     let room_id = queries::get_room_id_by_member(db, member_id).await?;
 
     // check hash is a valid santa id
-    // let santa_ids = queries::get_santa_ids(db, &room_id).await?;
-    // if !santa_ids.contains(&hash) {
-    //     return Err(RoomError::LiarLiarPantsOnFire(
-    //         "Provided rejection proof does not match any Santa ID".to_string(),
-    //     )
-    //     .into());
-    // }
+    let santa_ids = queries::get_santa_id_messages(db, &room_id).await?;
+    if !santa_ids.contains(&hash) {
+        return Err(RoomError::LiarLiarPantsOnFire(
+            "Provided rejection proof does not match any Santa ID".to_string(),
+        )
+        .into());
+    }
 
     // construct the bijection and verify self-assignment
     // let bijection_seed = queries::get_bijection_seed(db, &room_id).await?;

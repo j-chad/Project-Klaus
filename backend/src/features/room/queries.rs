@@ -393,3 +393,28 @@ pub async fn mark_as_rejected(
 
     Ok(())
 }
+
+pub async fn get_santa_id_messages(
+    db: &PgPool,
+    room_id: &Uuid,
+) -> Result<Vec<String>, sqlx::Error> {
+    sqlx::query!(
+        r#"
+        SELECT array_agg(message_content) AS all_messages
+        FROM santa_id_message message
+        JOIN santa_id_round round ON message.round_id = round.id
+        CROSS JOIN LATERAL unnest(message.content) AS message_content
+        WHERE round.room_id = $1
+          AND round.round_number = (
+              SELECT MAX(round_number)
+              FROM santa_id_round
+              WHERE room_id = $1
+          );
+        "#,
+        room_id
+    )
+    .fetch_one(db)
+    .await?
+    .all_messages
+    .ok_or(sqlx::Error::RowNotFound)
+}
