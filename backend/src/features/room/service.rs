@@ -215,7 +215,6 @@ async fn handle_verification_rejection(
 
     // proof is valid
     queries::mark_as_rejected(db, member_id, proof).await?;
-    queries::set_game_phase(db, &room_id, GamePhase::Rejected).await?;
 
     Ok(())
 }

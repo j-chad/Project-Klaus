@@ -366,3 +366,30 @@ pub async fn mark_as_verified(db: &PgPool, member_id: &Uuid) -> Result<Option<i3
     .await
     .map(|row| row.remaining_users.map(|count| count as i32))
 }
+
+pub async fn mark_as_rejected(
+    db: &PgPool,
+    member_id: &Uuid,
+    proof: &str,
+) -> Result<(), sqlx::Error> {
+    sqlx::query!(
+        r#"
+        WITH room_update AS (
+            UPDATE room_member
+            SET verification_status = FALSE, rejected_proof = $2
+            WHERE id = $1
+            RETURNING room_id
+        )
+        UPDATE room
+        SET game_phase = 'rejected'
+        FROM room_update
+        WHERE room.id = room_update.room_id
+        "#,
+        member_id,
+        proof
+    )
+    .execute(db)
+    .await?;
+
+    Ok(())
+}
