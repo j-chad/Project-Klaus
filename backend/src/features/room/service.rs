@@ -145,7 +145,9 @@ pub async fn reveal_seed(db: &sqlx::PgPool, member_id: &Uuid, seed: &str) -> Res
         .await?
         .ok_or(AppError::unknown_error())?;
 
-    if remaining_seed_reveals == 0 {
+    // TODO: check if the returning value is before or after the update.
+    //       I suspect it is before
+    if remaining_seed_reveals == 1 {
         let room_id = queries::get_room_id_by_member(db, member_id).await?;
         queries::set_game_phase(db, &room_id, GamePhase::Verification).await?;
     }
