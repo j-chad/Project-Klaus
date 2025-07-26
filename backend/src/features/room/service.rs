@@ -26,7 +26,7 @@ pub async fn create_room(
         username,
         &fingerprint,
         &public_key,
-        &seed_commitment,
+        seed_commitment,
     )
     .await?;
 
@@ -70,7 +70,7 @@ pub async fn join_room(
         username,
         &fingerprint,
         &public_key,
-        &seed_commitment,
+        seed_commitment,
     )
     .await?;
 
