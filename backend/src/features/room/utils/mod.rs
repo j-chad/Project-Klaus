@@ -1,1 +1,1 @@
-mod bijection;
+pub mod bijection;

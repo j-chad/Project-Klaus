@@ -206,7 +206,8 @@ async fn handle_verification_rejection(
 
     // construct the bijection and verify self-assignment
     let seed_components = queries::get_seed_reveals(db, &room_id).await?;
-    let seed = utils::bijection::combine_seed_components(&seed_components);
+    let seed = utils::bijection::combine_seed_components(&seed_components)
+        .map_err(|_| AppError::unknown_error())?;
     // if !bijection_seed.verify_self_assignment(&hash, member_id) {
     //     return Err(RoomError::LiarLiarPantsOnFire(
     //         "Rejection proof does not match the bijection seed".to_string(),
