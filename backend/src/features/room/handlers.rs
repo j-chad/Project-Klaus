@@ -24,6 +24,7 @@ pub async fn create_room(
         &body.room_name,
         &body.username,
         &body.public_key,
+        &body.seed_hash,
         body.max_players,
     )
     .await?;
@@ -58,8 +59,14 @@ pub async fn join_room(
 ) -> Result<impl IntoResponse, AppError> {
     body.validate()?;
 
-    let user_id =
-        service::join_room(&state.db, &body.room_id, &body.name, &body.public_key).await?;
+    let user_id = service::join_room(
+        &state.db,
+        &body.room_id,
+        &body.name,
+        &body.public_key,
+        &body.seed_hash,
+    )
+    .await?;
 
     let ip_address = Some(addr.ip());
     let user_agent = headers.get("User-Agent").and_then(|h| h.to_str().ok());
@@ -98,16 +105,6 @@ pub async fn handle_santa_id_message(
     Json(body): Json<schemas::SantaIDMessage>,
 ) -> Result<impl IntoResponse, AppError> {
     service::handle_santa_id_message(&state.db, &session.member_id, &body.message_content).await?;
-
-    Ok(StatusCode::NO_CONTENT)
-}
-
-pub async fn commit_seed(
-    State(state): State<SharedState>,
-    auth::Session(session): auth::Session,
-    Json(body): Json<schemas::CommitSeedRequest>,
-) -> Result<impl IntoResponse, AppError> {
-    service::commit_seed(&state.db, &session.member_id, &body.hash).await?;
 
     Ok(StatusCode::NO_CONTENT)
 }

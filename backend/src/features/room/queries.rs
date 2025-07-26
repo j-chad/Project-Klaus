@@ -36,17 +36,19 @@ pub async fn new_room_member(
     name: &str,
     fingerprint: &str,
     public_key: &[u8],
+    seed_commitment: &str,
 ) -> Result<Uuid, sqlx::Error> {
     sqlx::query!(
         r#"
-        INSERT INTO room_member (room_id, fingerprint, public_key, name)
-        VALUES ($1, $2, $3, $4)
+        INSERT INTO room_member (room_id, fingerprint, public_key, name, seed_commitment)
+        VALUES ($1, $2, $3, $4, $5)
         RETURNING id;
         "#,
         room_id,
         fingerprint,
         public_key,
-        name
+        name,
+        seed_commitment
     )
     .fetch_one(pool)
     .await
@@ -64,6 +66,7 @@ pub async fn new_room_and_owner(
     username: &str,
     fingerprint: &str,
     public_key: &[u8],
+    seed_commitment: &str,
 ) -> Result<Uuid, sqlx::Error> {
     sqlx::query!(
         r#"
@@ -72,9 +75,9 @@ pub async fn new_room_and_owner(
             VALUES ($1, $2, $3)
             RETURNING id
         )
-        INSERT INTO room_member (room_id, name, fingerprint, public_key, is_owner)
+        INSERT INTO room_member (room_id, name, fingerprint, public_key, is_owner, seed_commitment)
         SELECT
-            new_room.id, $4, $5, $6, TRUE
+            new_room.id, $4, $5, $6, TRUE, $7
         FROM new_room
         RETURNING id
         "#,
@@ -83,7 +86,8 @@ pub async fn new_room_and_owner(
         max_members,
         username,
         fingerprint,
-        public_key
+        public_key,
+        seed_commitment
     )
     .fetch_one(pool)
     .await

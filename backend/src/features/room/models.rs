@@ -14,7 +14,6 @@ pub struct Room {
 pub enum GamePhase {
     Lobby,
     SantaId,
-    SeedCommit,
     SeedReveal,
     Verification,
     Rejected,

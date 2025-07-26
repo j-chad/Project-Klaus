@@ -9,6 +9,7 @@ pub struct CreateRoomRequest {
     pub username: String,
     pub max_players: Option<u32>,
     pub public_key: String, // DER encoded public key
+    pub seed_hash: String,
 }
 
 #[derive(Serialize)]
@@ -23,14 +24,10 @@ pub struct JoinRoomRequest {
     #[validate(length(min = 1, max = 30))]
     pub name: String,
     pub public_key: String, // DER encoded public key
+    pub seed_hash: String,
 }
 
 #[derive(Deserialize)]
 pub struct SantaIDMessage {
     pub message_content: Vec<String>,
-}
-
-#[derive(Deserialize)]
-pub struct CommitSeedRequest {
-    pub hash: String,
 }

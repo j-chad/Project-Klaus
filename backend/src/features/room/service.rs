@@ -11,6 +11,7 @@ pub async fn create_room(
     room_name: &str,
     username: &str,
     public_key: &str,
+    seed_commitment: &str,
     max_players: Option<u32>,
 ) -> Result<(Uuid, String), AppError> {
     let (public_key, fingerprint) = auth::utils::cryptography::decode_public_key(public_key)?;
@@ -25,6 +26,7 @@ pub async fn create_room(
         username,
         &fingerprint,
         &public_key,
+        &seed_commitment,
     )
     .await?;
 
@@ -37,6 +39,7 @@ pub async fn join_room(
     room_id: &str,
     username: &str,
     public_key: &str,
+    seed_commitment: &str,
 ) -> Result<Uuid, AppError> {
     let room = queries::get_room_by_join_code(pool, room_id)
         .await?
@@ -61,8 +64,15 @@ pub async fn join_room(
 
     let (public_key, fingerprint) = auth::utils::cryptography::decode_public_key(public_key)?;
 
-    let user_id =
-        queries::new_room_member(pool, room.id, username, &fingerprint, &public_key).await?;
+    let user_id = queries::new_room_member(
+        pool,
+        room.id,
+        username,
+        &fingerprint,
+        &public_key,
+        &seed_commitment,
+    )
+    .await?;
 
     if should_start_game {
         start_game(pool, &user_id).await?;
@@ -115,14 +125,6 @@ pub async fn handle_santa_id_message(
     }
 
     Ok(())
-}
-
-pub async fn commit_seed(db: &sqlx::PgPool, member_id: &Uuid, hash: &str) -> Result<(), AppError> {
-    expect_game_phase(db, member_id, GamePhase::SeedCommit).await?;
-
-    // does user already have a seed committed?
-
-    // are they the last user to commit a seed?
 }
 
 async fn advance_message_round(

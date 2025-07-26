@@ -13,7 +13,6 @@
               "Enum": [
                 "lobby",
                 "santa_id",
-                "seed_commit",
                 "seed_reveal",
                 "verification",
                 "rejected",

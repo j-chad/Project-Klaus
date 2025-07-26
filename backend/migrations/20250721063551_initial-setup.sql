@@ -10,8 +10,7 @@ $$ LANGUAGE plpgsql;
 CREATE TYPE game_phase AS ENUM (
     'lobby',         -- waiting for members to join
     'santa_id',        -- step 1: anonymously publishing santa IDs
-    'seed_commit', -- step 2a: publish seed commitment
-    'seed_reveal', -- step 2b: revealing the seed
+    'seed_reveal',     -- step 2: revealing the seed
     'verification',    -- step 3: checking for self-assignments
     'rejected',        -- game rejected due to self-assignments or other issues. wait for members to acknowledge
     'completed'        -- game finished successfully
@@ -52,7 +51,7 @@ CREATE TABLE room_member (
     public_key  BYTEA NOT NULL,
     is_owner    BOOLEAN NOT NULL         DEFAULT FALSE,
 
-    seed_commitment TEXT,
+    seed_commitment TEXT NOT NULL, -- hash to prove the member has committed to a seed before revealing it
     seed INT,
 
     rejected_proof INT,

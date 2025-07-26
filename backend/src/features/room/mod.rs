@@ -17,7 +17,6 @@ pub fn build_router() -> axum::Router<SharedState> {
         .route("/join", post(handlers::join_room))
         .route("/start", post(handlers::start_game))
         .route("/publish/message", post(handlers::handle_santa_id_message))
-        .route("/commit/seed", post(handlers::commit_seed))
 }
 
 #[derive(Deserialize)]
