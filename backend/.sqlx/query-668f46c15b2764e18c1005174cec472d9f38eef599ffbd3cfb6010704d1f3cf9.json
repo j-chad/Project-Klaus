@@ -1,0 +1,22 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n        UPDATE room_member\n        SET verification_status = TRUE\n        WHERE id = $1\n        RETURNING (\n            SELECT COUNT(*)\n            FROM room_member\n            WHERE room_id = (SELECT room_id FROM room_member WHERE id = $1)\n              AND verification_status IS FALSE\n        ) AS remaining_users\n        ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "remaining_users",
+        "type_info": "Int8"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      null
+    ]
+  },
+  "hash": "668f46c15b2764e18c1005174cec472d9f38eef599ffbd3cfb6010704d1f3cf9"
+}

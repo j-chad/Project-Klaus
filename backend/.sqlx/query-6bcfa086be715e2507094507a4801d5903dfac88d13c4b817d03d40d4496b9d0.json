@@ -1,0 +1,15 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n        WITH room_update AS (\n            UPDATE room_member\n            SET verification_status = FALSE, rejected_proof = $2\n            WHERE id = $1\n            RETURNING room_id\n        )\n        UPDATE room\n        SET game_phase = 'rejected'\n        FROM room_update\n        WHERE room.id = room_update.room_id\n        ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Text"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "6bcfa086be715e2507094507a4801d5903dfac88d13c4b817d03d40d4496b9d0"
+}

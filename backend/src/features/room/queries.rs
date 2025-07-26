@@ -418,3 +418,21 @@ pub async fn get_santa_id_messages(
     .all_messages
     .ok_or(sqlx::Error::RowNotFound)
 }
+
+pub async fn get_seed_reveals(db: &PgPool, room_id: &Uuid) -> Result<Vec<String>, sqlx::Error> {
+    let seeds = sqlx::query!(
+        r#"
+        SELECT seed as "seed!"
+        FROM room_member
+        WHERE room_id = $1 AND seed IS NOT NULL
+        "#,
+        room_id
+    )
+    .fetch_all(db)
+    .await?
+    .into_iter()
+    .map(|row| row.seed)
+    .collect();
+
+    Ok(seeds)
+}

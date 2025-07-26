@@ -1,0 +1,22 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n        SELECT array_agg(message_content) AS all_messages\n        FROM santa_id_message message\n        JOIN santa_id_round round ON message.round_id = round.id\n        CROSS JOIN LATERAL unnest(message.content) AS message_content\n        WHERE round.room_id = $1\n          AND round.round_number = (\n              SELECT MAX(round_number)\n              FROM santa_id_round\n              WHERE room_id = $1\n          );\n        ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "all_messages",
+        "type_info": "TextArray"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      null
+    ]
+  },
+  "hash": "cc2c21b71a2495d37d29915422c31beab75b45c6a9d8ef1df376dcd4409440b4"
+}

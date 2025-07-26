@@ -191,13 +191,13 @@ async fn handle_verification_rejection(
     member_id: &Uuid,
     proof: &str,
 ) -> Result<(), AppError> {
-    let hash = base64_hash(proof).map_err(|_| RoomError::InvalidRejectionProof)?;
+    let santa_id = base64_hash(proof).map_err(|_| RoomError::InvalidRejectionProof)?;
 
     let room_id = queries::get_room_id_by_member(db, member_id).await?;
 
     // check hash is a valid santa id
     let santa_ids = queries::get_santa_id_messages(db, &room_id).await?;
-    if !santa_ids.contains(&hash) {
+    if !santa_ids.contains(&santa_id) {
         return Err(RoomError::LiarLiarPantsOnFire(
             "Provided rejection proof does not match any Santa ID".to_string(),
         )
@@ -205,7 +205,7 @@ async fn handle_verification_rejection(
     }
 
     // construct the bijection and verify self-assignment
-    // let bijection_seed = queries::get_bijection_seed(db, &room_id).await?;
+    let bijection_seed = queries::get_seed_reveals(db, &room_id).await?;
     // if !bijection_seed.verify_self_assignment(&hash, member_id) {
     //     return Err(RoomError::LiarLiarPantsOnFire(
     //         "Rejection proof does not match the bijection seed".to_string(),

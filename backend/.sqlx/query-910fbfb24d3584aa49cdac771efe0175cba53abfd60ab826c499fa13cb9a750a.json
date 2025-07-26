@@ -1,0 +1,22 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n        SELECT seed as \"seed!\"\n        FROM room_member\n        WHERE room_id = $1 AND seed IS NOT NULL\n        ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "seed!",
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      true
+    ]
+  },
+  "hash": "910fbfb24d3584aa49cdac771efe0175cba53abfd60ab826c499fa13cb9a750a"
+}
