@@ -14,13 +14,13 @@ impl Pcg32 {
             state: seed.wrapping_add(INCREMENT),
         };
 
-        rng.next_u32(); // Discard the first value to ensure better randomness
+        rng.advance_state(); // Discard the first value to ensure better randomness
         rng
     }
 
     pub fn next_u32(&mut self) -> u32 {
         let old_state = self.state;
-        self.next_state();
+        self.advance_state();
 
         #[allow(clippy::cast_possible_truncation)]
         let xor_shifted = (((old_state >> 18) ^ old_state) >> 27) as u32;
@@ -29,7 +29,23 @@ impl Pcg32 {
         xor_shifted.rotate_right(rot)
     }
 
-    fn next_state(&mut self) {
+    /// Generates a random number in the range [0, max) without modulo bias.
+    pub fn gen_range(&mut self, max: u32) -> u32 {
+        if max == 0 {
+            return 0;
+        }
+
+        // avoid modulo bias using rejection sampling + modulo reduction
+        let threshold = u32::MAX - (u32::MAX % max);
+        loop {
+            let value = self.next_u32();
+            if value < threshold {
+                return value % max;
+            }
+        }
+    }
+
+    pub fn advance_state(&mut self) {
         self.state = self.state.wrapping_mul(MULTIPLIER).wrapping_add(INCREMENT);
     }
 }
