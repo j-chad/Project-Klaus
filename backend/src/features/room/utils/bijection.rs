@@ -15,11 +15,11 @@ pub fn combine_seed_components(components: &[String]) -> Result<u64, base64::Dec
     Ok(sum)
 }
 
-pub fn get_target_for_santa_id(
+pub fn get_assignment(
+    seed: u64,
+    query_santa_id: &str,
     mut santa_ids: Vec<String>,
     mut target_names: Vec<String>,
-    query_santa_id: &str,
-    seed: u64,
 ) -> Option<String> {
     // Sort the lists to ensure deterministic behavior
     santa_ids.sort();

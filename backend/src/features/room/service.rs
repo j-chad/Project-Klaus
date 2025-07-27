@@ -4,6 +4,7 @@ use crate::error::AppError;
 use crate::features::auth;
 use crate::features::room::models::GamePhase;
 use crate::features::room::schemas::VerificationRequest;
+use crate::features::room::utils::bijection;
 use base64::Engine;
 use base64::prelude::BASE64_STANDARD;
 use tracing::error;
@@ -199,21 +200,26 @@ async fn handle_verification_rejection(
     let santa_ids = queries::get_santa_id_messages(db, &room_id).await?;
     if !santa_ids.contains(&santa_id) {
         return Err(RoomError::LiarLiarPantsOnFire(
-            "Provided rejection proof does not match any Santa ID".to_string(),
+            "provided rejection proof does not match any Santa ID".to_string(),
         )
         .into());
     }
 
     // construct the bijection and verify self-assignment
-    let seed_components = queries::get_seed_reveals(db, &room_id).await?;
-    let seed = utils::bijection::combine_seed_components(&seed_components)
+    let (seed_components, member_names) = queries::get_seeds_and_names(db, &room_id).await?;
+    let seed = bijection::combine_seed_components(&seed_components)
         .map_err(|_| AppError::unknown_error())?;
-    // if !bijection_seed.verify_self_assignment(&hash, member_id) {
-    //     return Err(RoomError::LiarLiarPantsOnFire(
-    //         "Rejection proof does not match the bijection seed".to_string(),
-    //     )
-    //     .into());
-    // }
+
+    let target_name = bijection::get_assignment(seed, proof, santa_ids, member_names)
+        .ok_or(AppError::unknown_error())?;
+    let member_name = queries::get_member_name(db, member_id).await?;
+
+    if target_name != member_name {
+        return Err(RoomError::LiarLiarPantsOnFire(
+            "rejection proof does not match the bijection seed".to_string(),
+        )
+        .into());
+    }
 
     // proof is valid
     queries::mark_as_rejected(db, member_id, proof).await?;

@@ -419,20 +419,38 @@ pub async fn get_santa_id_messages(
     .ok_or(sqlx::Error::RowNotFound)
 }
 
-pub async fn get_seed_reveals(db: &PgPool, room_id: &Uuid) -> Result<Vec<String>, sqlx::Error> {
-    let seeds = sqlx::query!(
+pub async fn get_seeds_and_names(
+    db: &PgPool,
+    room_id: &Uuid,
+) -> Result<(Vec<String>, Vec<String>), sqlx::Error> {
+    let data = sqlx::query!(
         r#"
-        SELECT seed as "seed!"
+        SELECT seed as "seed!", name
         FROM room_member
         WHERE room_id = $1 AND seed IS NOT NULL
+        ORDER BY name
         "#,
         room_id
     )
     .fetch_all(db)
     .await?
     .into_iter()
-    .map(|row| row.seed)
-    .collect();
+    .map(|row| (row.seed, row.name))
+    .unzip();
 
-    Ok(seeds)
+    Ok(data)
+}
+
+pub async fn get_member_name(db: &PgPool, member_id: &Uuid) -> Result<String, sqlx::Error> {
+    sqlx::query!(
+        r#"
+        SELECT name
+        FROM room_member
+        WHERE id = $1
+        "#,
+        member_id
+    )
+    .fetch_one(db)
+    .await
+    .map(|row| row.name)
 }
