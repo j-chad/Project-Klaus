@@ -45,7 +45,7 @@ impl Pcg32 {
         }
     }
 
-    pub fn advance_state(&mut self) {
+    fn advance_state(&mut self) {
         self.state = self.state.wrapping_mul(MULTIPLIER).wrapping_add(INCREMENT);
     }
 }
