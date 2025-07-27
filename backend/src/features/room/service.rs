@@ -1,5 +1,5 @@
 use super::errors::{ExpectedCurrent, RoomError};
-use super::{queries, utils};
+use super::queries;
 use crate::error::AppError;
 use crate::features::auth;
 use crate::features::room::models::GamePhase;

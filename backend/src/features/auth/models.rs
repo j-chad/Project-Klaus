@@ -12,7 +12,6 @@ pub enum TokenType {
 pub struct Token {
     pub id: uuid::Uuid,
     pub member_id: uuid::Uuid,
-    pub token_type: TokenType,
     pub created_at: chrono::DateTime<chrono::Utc>,
     pub expires_at: chrono::DateTime<chrono::Utc>,
     pub last_seen_at: chrono::DateTime<chrono::Utc>,

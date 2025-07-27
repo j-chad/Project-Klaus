@@ -48,7 +48,7 @@ pub async fn get_session_token_and_update_access_time(
         UPDATE token
         SET last_seen_at = NOW()
         WHERE token = $1 AND type = 'session'
-        RETURNING id, member_id, type AS "token_type: TokenType", created_at, expires_at, last_seen_at, user_agent, ip_address
+        RETURNING id, member_id, created_at, expires_at, last_seen_at, user_agent, ip_address
         "#,
         token
     )
@@ -101,7 +101,7 @@ pub async fn get_and_delete_challenge_token_for_fingerprint(
         AND room_member.fingerprint = $1
         AND token.type = 'challenge' 
         AND token.token = $2
-        RETURNING token.id, token.member_id, token.type AS "token_type: TokenType", token.created_at, token.expires_at, token.last_seen_at, token.user_agent, token.ip_address
+        RETURNING token.id, token.member_id, token.created_at, token.expires_at, token.last_seen_at, token.user_agent, token.ip_address
         "#,
         fingerprint,
         token
@@ -125,7 +125,7 @@ pub async fn get_and_delete_ephemeral_token_by_room_code(
         AND r.join_code = $1
         AND token.token = $2
         AND token.type = 'ephemeral'
-        RETURNING token.id, token.member_id, token.type AS "token_type: TokenType", token.created_at, token.expires_at, token.last_seen_at, token.user_agent, token.ip_address
+        RETURNING token.id, token.member_id, token.created_at, token.expires_at, token.last_seen_at, token.user_agent, token.ip_address
         "#,
         room_code,
         token

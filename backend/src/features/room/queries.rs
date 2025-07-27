@@ -11,7 +11,7 @@ pub async fn get_room_by_join_code(
     sqlx::query_as!(
         models::Room,
         r#"
-        SELECT room.id, room.name, room.join_code, room.created_at, room.updated_at, room.max_members, room.started_at, (
+        SELECT room.id, room.max_members, (
             CASE
                 WHEN max_members IS NOT NULL THEN (
                     SELECT COUNT(*)
@@ -25,8 +25,8 @@ pub async fn get_room_by_join_code(
         "#,
         join_code
     )
-        .fetch_optional(pool)
-        .await
+    .fetch_optional(pool)
+    .await
 }
 
 /// Creates a new room member.
