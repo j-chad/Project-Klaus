@@ -187,6 +187,26 @@ pub async fn handle_verification(
     Ok(())
 }
 
+pub async fn acknowledge_rejection(
+    db: &sqlx::PgPool,
+    member_id: &Uuid,
+    new_seed_commitment: &str,
+) -> Result<(), AppError> {
+    expect_game_phase(db, member_id, GamePhase::Rejected).await?;
+
+    let remaining = queries::acknowledge_result(db, member_id, new_seed_commitment).await?;
+
+    // TODO: check if the returning value is before or after the update.
+    //       I suspect it is before
+    if remaining == 1 {
+        // restart the game
+        let room_id = queries::get_room_id_by_member(db, member_id).await?;
+        queries::restart_game(db, &room_id).await?;
+    }
+
+    Ok(())
+}
+
 async fn handle_verification_rejection(
     db: &sqlx::PgPool,
     member_id: &Uuid,

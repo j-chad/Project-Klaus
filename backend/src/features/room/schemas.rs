@@ -43,3 +43,8 @@ pub enum VerificationRequest {
     Accept,
     Rejected { proof: String },
 }
+
+#[derive(Deserialize)]
+pub struct ResultAckRequest {
+    pub seed_hash: String,
+}

@@ -20,6 +20,10 @@ pub fn build_router() -> axum::Router<SharedState> {
         .route("/publish/message", post(handlers::handle_santa_id_message))
         .route("/publish/seed", post(handlers::handle_seed_reveal))
         .route("/publish/verification", post(handlers::handle_verification))
+        .route(
+            "/publish/ack-rejection",
+            post(handlers::handle_rejection_ack),
+        )
 }
 
 #[derive(Deserialize)]

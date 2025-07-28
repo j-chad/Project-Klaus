@@ -454,3 +454,43 @@ pub async fn get_member_name(db: &PgPool, member_id: &Uuid) -> Result<String, sq
     .await
     .map(|row| row.name)
 }
+
+pub async fn acknowledge_result(
+    db: &PgPool,
+    member_id: &Uuid,
+    new_seed_commitment: &str,
+) -> Result<i64, sqlx::Error> {
+    sqlx::query!(
+        r#"
+        UPDATE room_member
+        SET seed_commitment = $2, seed = NULL, verification_status = TRUE
+        WHERE id = $1
+        RETURNING (
+            SELECT COUNT(*)
+            FROM room_member
+            WHERE room_id = (SELECT room_id FROM room_member WHERE id = $1)
+              AND seed_commitment IS NULL
+        ) AS "remaining_users!"
+        "#,
+        member_id,
+        new_seed_commitment
+    )
+    .fetch_one(db)
+    .await
+    .map(|row| row.remaining_users)
+}
+
+pub async fn restart_game(db: &PgPool, room_id: &Uuid) -> Result<(), sqlx::Error> {
+    sqlx::query!(
+        r#"
+        UPDATE room
+        SET game_phase = 'santa_id', started_at = NULL, iteration = iteration + 1
+        WHERE id = $1
+        "#,
+        room_id
+    )
+    .execute(db)
+    .await?;
+
+    Ok(())
+}

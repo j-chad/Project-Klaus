@@ -60,13 +60,12 @@ CREATE TABLE room_member (
 
     joined_at   TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
 
-    UNIQUE (room_id, seed_commitment), -- each member in a room must have a unique seed commitment
     CHECK (seed IS NULL OR seed_commitment IS NOT NULL) -- must commit before revealing seed
 );
 
 CREATE TYPE token_type AS ENUM (
     'session', -- long-lived session token
-    'ephemeral', -- short-lived single use token for ephemeral actions
+    'ephemeral', -- short-lived single use token for websocket connections
     'challenge' -- short-lived token for challenge verification
 );
 
