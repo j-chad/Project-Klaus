@@ -87,12 +87,13 @@ CREATE TABLE token (
 CREATE TABLE santa_id_round (
     id          UUID PRIMARY KEY         DEFAULT gen_random_uuid(),
     room_id     UUID    NOT NULL REFERENCES room(id) ON DELETE CASCADE,
+    room_iteration INTEGER NOT NULL REFERENCES room(iteration) ON DELETE CASCADE,
 
     round_number INTEGER NOT NULL, -- 0 to N, where N is the number of members in the room
 
     created_at  TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL,
 
-    UNIQUE (room_id, round_number),
+    UNIQUE (room_id, room_iteration, round_number),
     CHECK (round_number >= 0)
 );
 
