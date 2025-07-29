@@ -8,7 +8,7 @@ $$ LANGUAGE plpgsql;
 
 -- Game state tracking
 CREATE TYPE game_phase AS ENUM (
-    'lobby',         -- waiting for members to join
+    'lobby',           -- waiting for members to join
     'santa_id',        -- step 1: anonymously publishing santa IDs
     'seed_reveal',     -- step 2: revealing the seed
     'verification',    -- step 3: checking for self-assignments
@@ -23,24 +23,34 @@ CREATE TABLE room (
     name TEXT NOT NULL,
     max_members INTEGER,
 
-    game_phase game_phase NOT NULL DEFAULT 'lobby',
-    iteration INTEGER NOT NULL DEFAULT 0,
-
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL,
-    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL,
-    started_at TIMESTAMP WITH TIME ZONE DEFAULT NULL,
-    deleted_at TIMESTAMP WITH TIME ZONE DEFAULT NULL
-
-    CHECK ( -- game_phase can only be waiting if iteration is 0
-      (iteration = 0) OR
-      (iteration > 0 AND game_phase != 'lobby')
-    )
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL
 );
 
 CREATE TRIGGER trigger_update_room_updated_at
     BEFORE UPDATE ON room
     FOR EACH ROW
 EXECUTE PROCEDURE update_updated_at_column();
+
+CREATE TABLE game_iteration (
+    id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    room_id     UUID NOT NULL REFERENCES room(id) ON DELETE CASCADE,
+
+    iteration   INTEGER NOT NULL DEFAULT 0, -- 0 is the first iteration, incremented for each new game
+    phase       game_phase NOT NULL DEFAULT 'lobby',
+
+    created_at  TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    updated_at  TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    started_at TIMESTAMP WITH TIME ZONE DEFAULT NULL,
+
+    UNIQUE (room_id, iteration),
+    CHECK (iteration >= 0),
+    CHECK (  -- phase can only be 'lobby' in the first iteration
+        (iteration = 0) OR
+        (iteration > 0 AND phase != 'lobby')
+    )
+
+);
 
 CREATE TABLE room_member (
     id          UUID PRIMARY KEY         DEFAULT gen_random_uuid(),
@@ -51,14 +61,23 @@ CREATE TABLE room_member (
     public_key  BYTEA NOT NULL,
     is_owner    BOOLEAN NOT NULL         DEFAULT FALSE,
 
-    seed_commitment TEXT NOT NULL, -- hash to prove the member has committed to a seed before revealing it
-    seed TEXT,
-
-    rejected_proof TEXT,
-    verification_status BOOLEAN NOT NULL DEFAULT FALSE, -- whether the member has verified their santa ID
-    result_acknowledged BOOLEAN NOT NULL DEFAULT FALSE, -- whether the member has acknowledged that the game is now complete/rejected
-
     joined_at   TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+);
+
+CREATE TABLE member_iteration_state (
+    member_id UUID NOT NULL REFERENCES room_member(id) ON DELETE CASCADE,
+    iteration_id UUID NOT NULL REFERENCES game_iteration(id) ON DELETE CASCADE,
+    PRIMARY KEY (member_id, iteration_id),
+
+    seed_commitment TEXT NOT NULL, -- hash of the seed commitment
+    seed TEXT, -- the actual seed, revealed after the commitment
+
+    rejected_proof TEXT, -- proof of self-assignment
+    verification_status BOOLEAN NOT NULL DEFAULT FALSE, -- whether the member has verified the bijection
+    result_acknowledged BOOLEAN NOT NULL DEFAULT FALSE, -- whether the member has acknowledged the game is complete/rejected
+
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL,
 
     CHECK (seed IS NULL OR seed_commitment IS NOT NULL) -- must commit before revealing seed
 );
@@ -84,22 +103,21 @@ CREATE TABLE token (
     last_seen_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL
 );
 
-CREATE TABLE santa_id_round (
+CREATE TABLE onion_round (
     id          UUID PRIMARY KEY         DEFAULT gen_random_uuid(),
-    room_id     UUID    NOT NULL REFERENCES room(id) ON DELETE CASCADE,
-    room_iteration INTEGER NOT NULL REFERENCES room(iteration) ON DELETE CASCADE,
+    iteration_id UUID NOT NULL REFERENCES game_iteration(id) ON DELETE CASCADE,
 
     round_number INTEGER NOT NULL, -- 0 to N, where N is the number of members in the room
 
     created_at  TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL,
 
-    UNIQUE (room_id, room_iteration, round_number),
+    UNIQUE (iteration_id, round_number),
     CHECK (round_number >= 0)
 );
 
-CREATE TABLE santa_id_message (
+CREATE TABLE onion_message (
     id          UUID PRIMARY KEY         DEFAULT gen_random_uuid(),
-    round_id    UUID    NOT NULL REFERENCES santa_id_round(id) ON DELETE CASCADE,
+    round_id    UUID    NOT NULL REFERENCES onion_round(id) ON DELETE CASCADE,
     member_id   UUID    NOT NULL REFERENCES room_member(id) ON DELETE CASCADE,
 
     content     TEXT ARRAY NOT NULL, -- it is possible that a member decrypts multiple messages per round.
