@@ -16,7 +16,7 @@ pub enum GamePhase {
 }
 
 #[derive(Debug)]
-pub struct MessageRoundStatus {
+pub struct OnionRoundStatus {
     pub room_id: uuid::Uuid,
     pub user_has_sent_message: bool,
     pub current_round: i32,

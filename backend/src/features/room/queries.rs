@@ -1,5 +1,5 @@
 use super::models;
-use crate::features::room::models::{GamePhase, MessageRoundStatus};
+use crate::features::room::models::{GamePhase, OnionRoundStatus};
 use sqlx::PgPool;
 use uuid::Uuid;
 
@@ -182,10 +182,10 @@ pub async fn get_game_phase_by_member(
     .map(|row| row.game_phase)
 }
 
-pub async fn get_message_round_status(
+pub async fn get_onion_round_status(
     db: &PgPool,
     member_id: &Uuid,
-) -> Result<MessageRoundStatus, sqlx::Error> {
+) -> Result<OnionRoundStatus, sqlx::Error> {
     sqlx::query!(
         r#"
         WITH members_room AS (
@@ -193,17 +193,24 @@ pub async fn get_message_round_status(
             FROM room
             WHERE id = (SELECT room_id FROM room_member WHERE id = $1)
         ),
+        current_iteration AS (
+            SELECT id
+            FROM game_iteration
+            WHERE room_id = (SELECT id FROM members_room)
+            ORDER BY iteration DESC
+            LIMIT 1
+        ),
         current_round AS (
             SELECT id, round_number
-            FROM santa_id_round
-            WHERE room_id = (SELECT id FROM members_room)
+            FROM onion_round
+            WHERE iteration_id = (SELECT id FROM current_iteration)
             ORDER BY round_number DESC
             LIMIT 1
         ),
         user_status AS (
             SELECT EXISTS(
                 SELECT 1
-                FROM santa_id_message message
+                FROM onion_message message
                 JOIN current_round ON message.round_id = current_round.id
                 WHERE message.member_id = $1
             ) as has_sent_message
@@ -214,7 +221,7 @@ pub async fn get_message_round_status(
             WHERE rm.room_id = (SELECT id FROM members_room)
               AND rm.id NOT IN (
                 SELECT message.member_id
-                FROM santa_id_message message
+                FROM onion_message message
                 JOIN current_round ON message.round_id = current_round.id
             )
         ),
@@ -235,12 +242,12 @@ pub async fn get_message_round_status(
     )
     .fetch_one(db)
     .await
-    .map(|row| -> Result<MessageRoundStatus, sqlx::Error> {
+    .map(|row| -> Result<OnionRoundStatus, sqlx::Error> {
         let user_has_sent_message = row.has_sent_message.ok_or(sqlx::Error::RowNotFound)?;
         let users_remaining = row.remaining.ok_or(sqlx::Error::RowNotFound)?;
         let total_users = row.total_users.ok_or(sqlx::Error::RowNotFound)?;
 
-        Ok(MessageRoundStatus {
+        Ok(OnionRoundStatus {
             user_has_sent_message,
             users_remaining,
             total_users,
@@ -250,7 +257,7 @@ pub async fn get_message_round_status(
     })?
 }
 
-pub async fn create_santa_id_message(
+pub async fn create_onion_message(
     db: &PgPool,
     room_id: &Uuid,
     member_id: &Uuid,
@@ -258,14 +265,21 @@ pub async fn create_santa_id_message(
 ) -> Result<(), sqlx::Error> {
     sqlx::query!(
         r#"
-        WITH current_round AS (
+        WITH current_iteration AS (
             SELECT id
-            FROM santa_id_round
+            FROM game_iteration
             WHERE room_id = $1
+            ORDER BY iteration DESC
+            LIMIT 1
+        ),
+        current_round AS (
+            SELECT id
+            FROM onion_round
+            WHERE iteration_id = (SELECT id FROM current_iteration)
             ORDER BY round_number DESC
             LIMIT 1
         )
-        INSERT INTO santa_id_message (member_id, content, round_id)
+        INSERT INTO onion_message (member_id, content, round_id)
         SELECT $2, $3, current_round.id
         FROM current_round
         "#,
@@ -286,9 +300,14 @@ pub async fn set_game_phase(
 ) -> Result<(), sqlx::Error> {
     sqlx::query!(
         r#"
-        UPDATE room
-        SET game_phase = $2
-        WHERE id = $1
+        UPDATE game_iteration
+        SET phase = $2
+        WHERE room_id = $1
+          AND iteration = (
+              SELECT MAX(iteration)
+              FROM game_iteration
+              WHERE room_id = $1
+          )
         "#,
         room_id,
         game_phase as _
@@ -306,8 +325,16 @@ pub async fn new_message_round(
 ) -> Result<(), sqlx::Error> {
     sqlx::query!(
         r#"
-        INSERT INTO santa_id_round (room_id, round_number)
-        VALUES ($1, $2)
+        WITH current_iteration AS (
+            SELECT id
+            FROM game_iteration
+            WHERE room_id = $1
+            ORDER BY iteration DESC
+            LIMIT 1
+        )
+        INSERT INTO onion_round (iteration_id, round_number)
+        SELECT current_iteration.id, $2
+        FROM current_iteration
         "#,
         room_id,
         round_number
@@ -325,8 +352,10 @@ pub async fn get_seed_commitment_for_member(
     sqlx::query!(
         r#"
         SELECT seed_commitment
-        FROM room_member
-        WHERE id = $1
+        FROM member_iteration_state
+        WHERE member_id = $1
+        ORDER BY iteration_id DESC
+        LIMIT 1
         "#,
         member_id
     )
@@ -356,14 +385,23 @@ pub async fn reveal_seed(
 ) -> Result<Option<i32>, sqlx::Error> {
     sqlx::query!(
         r#"
-        UPDATE room_member
+        WITH current_iteration AS (
+            SELECT game_iteration.id
+            FROM room_member
+            JOIN game_iteration ON room_member.room_id = game_iteration.room_id
+            WHERE room_member.id = $1
+            ORDER BY iteration DESC
+            LIMIT 1
+        )
+        UPDATE member_iteration_state
         SET seed = $2
-        WHERE id = $1
+        WHERE member_id = $1
+        AND iteration_id = (SELECT id FROM current_iteration)
         RETURNING (
             SELECT COUNT(*)
-            FROM room_member
-            WHERE room_id = (SELECT room_id FROM room_member WHERE id = $1)
-              AND seed IS NULL
+            FROM member_iteration_state
+            JOIN current_iteration ON member_iteration_state.iteration_id = current_iteration.id
+            WHERE seed IS NULL
         ) AS remaining_users
         "#,
         member_id,
@@ -377,9 +415,9 @@ pub async fn reveal_seed(
 pub async fn mark_as_verified(db: &PgPool, member_id: &Uuid) -> Result<Option<i32>, sqlx::Error> {
     sqlx::query!(
         r#"
-        UPDATE room_member
+        UPDATE member_iteration_state
         SET verification_status = TRUE
-        WHERE id = $1
+        WHERE member_id = $1
         RETURNING (
             SELECT COUNT(*)
             FROM room_member
@@ -421,20 +459,17 @@ pub async fn mark_as_rejected(
     Ok(())
 }
 
-pub async fn get_santa_id_messages(
-    db: &PgPool,
-    room_id: &Uuid,
-) -> Result<Vec<String>, sqlx::Error> {
+pub async fn get_onion_messages(db: &PgPool, room_id: &Uuid) -> Result<Vec<String>, sqlx::Error> {
     sqlx::query!(
         r#"
         SELECT array_agg(message_content) AS all_messages
-        FROM santa_id_message message
-        JOIN santa_id_round round ON message.round_id = round.id
+        FROM onion_message message
+        JOIN onion_round round ON message.round_id = round.id
         CROSS JOIN LATERAL unnest(message.content) AS message_content
         WHERE round.room_id = $1
           AND round.round_number = (
               SELECT MAX(round_number)
-              FROM santa_id_round
+              FROM onion_round
               WHERE room_id = $1
           );
         "#,
