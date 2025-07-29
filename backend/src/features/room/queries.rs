@@ -21,7 +21,7 @@ pub async fn get_room_by_join_code(
             END
         ) AS "member_count"
         FROM room
-        WHERE deleted_at IS NULL AND join_code = $1
+        WHERE join_code = $1
         "#,
         join_code
     )
@@ -40,9 +40,21 @@ pub async fn new_room_member(
 ) -> Result<Uuid, sqlx::Error> {
     sqlx::query!(
         r#"
-        INSERT INTO room_member (room_id, fingerprint, public_key, name, seed_commitment)
-        VALUES ($1, $2, $3, $4, $5)
-        RETURNING id;
+        WITH new_member AS (
+            INSERT INTO room_member (room_id, fingerprint, public_key, name)
+            VALUES ($1, $2, $3, $4)
+            RETURNING id
+        ),
+        iteration AS (
+            SELECT id
+            FROM game_iteration
+            WHERE room_id = $1
+            AND iteration = 0
+        )
+        INSERT INTO member_iteration_state (member_id, seed_commitment, iteration_id)
+        SELECT new_member.id, $5, iteration.id
+        FROM new_member, iteration
+        RETURNING member_id as id;
         "#,
         room_id,
         fingerprint,
@@ -74,12 +86,23 @@ pub async fn new_room_and_owner(
             INSERT INTO room (name, join_code, max_members)
             VALUES ($1, $2, $3)
             RETURNING id
+        ),
+        new_iteration AS (
+            INSERT INTO game_iteration (room_id)
+            SELECT new_room.id
+            FROM new_room
+            RETURNING id
+        ),
+        new_member AS (
+            INSERT INTO room_member (room_id, name, fingerprint, public_key, is_owner)
+            SELECT new_room.id, $4, $5, $6, TRUE
+            FROM new_room
+            RETURNING id
         )
-        INSERT INTO room_member (room_id, name, fingerprint, public_key, is_owner, seed_commitment)
-        SELECT
-            new_room.id, $4, $5, $6, TRUE, $7
-        FROM new_room
-        RETURNING id
+        INSERT INTO member_iteration_state (member_id, seed_commitment, iteration_id)
+        SELECT new_member.id, $7, new_iteration.id
+        FROM new_member, new_iteration
+        RETURNING member_id as id;
         "#,
         room_name,
         join_code,
