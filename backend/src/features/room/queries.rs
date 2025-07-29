@@ -590,25 +590,3 @@ pub async fn acknowledge_result(
     .await
     .map(|row| row.remaining_users)
 }
-
-pub async fn restart_game(db: &PgPool, room_id: &Uuid) -> Result<(), sqlx::Error> {
-    sqlx::query!(
-        r#"
-        with current_iteration AS (
-            SELECT iteration
-            FROM game_iteration
-            WHERE room_id = $1
-            ORDER BY iteration DESC
-            LIMIT 1
-        )
-        INSERT INTO game_iteration (room_id, iteration)
-        SELECT $1, current_iteration.iteration + 1
-        FROM current_iteration
-        "#,
-        room_id
-    )
-    .execute(db)
-    .await?;
-
-    Ok(())
-}
