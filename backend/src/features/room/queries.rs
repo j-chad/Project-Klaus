@@ -234,8 +234,8 @@ pub async fn get_onion_round_status(
             current_round.round_number,
             members_room.id AS room_id,
             user_status.has_sent_message,
-            remaining_count.remaining,
-            total_users.total AS total_users
+            remaining_count.remaining as "remaining!",
+            total_users.total AS "total_users!"
         FROM user_status, remaining_count, members_room, current_round, total_users
         "#,
         member_id,
@@ -243,14 +243,12 @@ pub async fn get_onion_round_status(
     .fetch_one(db)
     .await
     .map(|row| -> Result<OnionRoundStatus, sqlx::Error> {
-        let user_has_sent_message = row.has_sent_message.ok_or(sqlx::Error::RowNotFound)?;
-        let users_remaining = row.remaining.ok_or(sqlx::Error::RowNotFound)?;
-        let total_users = row.total_users.ok_or(sqlx::Error::RowNotFound)?;
+        let user_has_sent_message = row.has_sent_message.unwrap_or(false);
 
         Ok(OnionRoundStatus {
             user_has_sent_message,
-            users_remaining,
-            total_users,
+            users_remaining: row.remaining,
+            total_users: row.total_users,
             current_round: row.round_number,
             room_id: row.room_id,
         })
