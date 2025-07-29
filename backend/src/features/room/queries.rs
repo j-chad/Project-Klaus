@@ -141,12 +141,13 @@ pub async fn is_owner(db: &PgPool, member_id: &Uuid) -> Result<bool, sqlx::Error
 pub async fn start_game(db: &PgPool, member_id: &Uuid) -> Result<(), sqlx::Error> {
     let row_count = sqlx::query!(
         r#"
-        UPDATE room
-        SET started_at = NOW(), game_phase = 'santa_id'
+        UPDATE game_iteration
+        SET started_at = NOW(), phase = 'santa_id'
         WHERE
-            id = (SELECT room_id FROM room_member WHERE id = $1)
+            room_id = (SELECT room_id FROM room_member WHERE id = $1)
+            AND iteration = 0
             AND started_at IS NULL
-            AND game_phase = 'lobby'
+            AND phase = 'lobby'
         "#,
         member_id
     )
@@ -167,9 +168,12 @@ pub async fn get_game_phase_by_member(
 ) -> Result<GamePhase, sqlx::Error> {
     sqlx::query!(
         r#"
-        SELECT game_phase AS "game_phase: GamePhase"
-        FROM room
-        WHERE id = (SELECT room_id FROM room_member WHERE id = $1)
+        SELECT phase AS "game_phase: GamePhase"
+        FROM room_member
+        JOIN game_iteration on room_member.room_id = game_iteration.room_id
+        WHERE room_member.id = $1
+        ORDER BY game_iteration.iteration DESC
+        LIMIT 1
         "#,
         member_id
     )
