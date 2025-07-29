@@ -441,15 +441,16 @@ pub async fn mark_as_verified(db: &PgPool, member_id: &Uuid) -> Result<Option<i3
     .map(|row| row.remaining_users.map(|count| count as i32))
 }
 
-pub async fn mark_as_rejected(
+pub async fn mark_as_rejected_and_restart(
     db: &PgPool,
     member_id: &Uuid,
     proof: &str,
+    seed_commitment: &str,
 ) -> Result<(), sqlx::Error> {
     sqlx::query!(
         r#"
         WITH current_iteration AS (
-            SELECT game_iteration.id
+            SELECT game_iteration.id, game_iteration.iteration, game_iteration.room_id
             FROM room_member
             JOIN game_iteration ON room_member.room_id = game_iteration.room_id
             WHERE room_member.id = $1
@@ -459,17 +460,29 @@ pub async fn mark_as_rejected(
         ),
         state_update AS (
             UPDATE member_iteration_state
-            SET verification_status = FALSE, rejected_proof = $2
+            SET verification_status = TRUE, rejected_proof = $2
             WHERE member_id = $1
             AND iteration_id = (SELECT id FROM current_iteration)
+        ),
+        update_phase as (
+            UPDATE game_iteration
+            SET phase = 'rejected'
+            FROM current_iteration
+            WHERE game_iteration.id = current_iteration.id
+        ),
+        new_iteration AS (
+            INSERT INTO game_iteration (room_id, iteration, phase)
+            SELECT current_iteration.room_id, current_iteration.iteration + 1, 'santa_id'
+            FROM current_iteration
+            RETURNING id
         )
-        UPDATE game_iteration
-        SET phase = 'rejected'
-        FROM current_iteration
-        WHERE game_iteration.id = current_iteration.id
+        INSERT INTO member_iteration_state (member_id, seed_commitment, iteration_id)
+        SELECT $1, $3, new_iteration.id
+        FROM new_iteration
         "#,
         member_id,
-        proof
+        proof,
+        seed_commitment
     )
     .execute(db)
     .await?;
@@ -513,9 +526,19 @@ pub async fn get_seeds_and_names(
 ) -> Result<(Vec<String>, Vec<String>), sqlx::Error> {
     let data = sqlx::query!(
         r#"
+        WITH current_iteration AS (
+            SELECT id
+            FROM game_iteration
+            WHERE room_id = $1
+            ORDER BY iteration DESC
+            LIMIT 1
+        )
         SELECT seed as "seed!", name
-        FROM room_member
-        WHERE room_id = $1 AND seed IS NOT NULL
+        FROM member_iteration_state member_state
+        JOIN current_iteration ON member_state.iteration_id = current_iteration.id
+        JOIN room_member member ON member_state.member_id = member.id
+        WHERE member_state.seed IS NOT NULL
+            AND member.room_id = $1
         ORDER BY name
         "#,
         room_id
@@ -571,9 +594,16 @@ pub async fn acknowledge_result(
 pub async fn restart_game(db: &PgPool, room_id: &Uuid) -> Result<(), sqlx::Error> {
     sqlx::query!(
         r#"
-        UPDATE room
-        SET game_phase = 'santa_id', started_at = NULL, iteration = iteration + 1
-        WHERE id = $1
+        with current_iteration AS (
+            SELECT iteration
+            FROM game_iteration
+            WHERE room_id = $1
+            ORDER BY iteration DESC
+            LIMIT 1
+        )
+        INSERT INTO game_iteration (room_id, iteration)
+        SELECT $1, current_iteration.iteration + 1
+        FROM current_iteration
         "#,
         room_id
     )

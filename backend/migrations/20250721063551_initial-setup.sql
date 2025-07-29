@@ -73,7 +73,6 @@ CREATE TABLE member_iteration_state (
 
     rejected_proof TEXT, -- proof of self-assignment
     verification_status BOOLEAN NOT NULL DEFAULT FALSE, -- whether the member has verified the bijection
-    result_acknowledged BOOLEAN NOT NULL DEFAULT FALSE, -- whether the member has acknowledged the game is complete/rejected
 
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL,
