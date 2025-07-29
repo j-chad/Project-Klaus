@@ -1,0 +1,28 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n        WITH new_room AS (\n            INSERT INTO room (name, join_code, max_members)\n            VALUES ($1, $2, $3)\n            RETURNING id\n        ),\n        new_iteration AS (\n            INSERT INTO game_iteration (room_id)\n            SELECT new_room.id\n            FROM new_room\n            RETURNING id\n        ),\n        new_member AS (\n            INSERT INTO room_member (room_id, name, fingerprint, public_key, is_owner)\n            SELECT new_room.id, $4, $5, $6, TRUE\n            FROM new_room\n            RETURNING id\n        )\n        INSERT INTO member_iteration_state (member_id, seed_commitment, iteration_id)\n        SELECT new_member.id, $7, new_iteration.id\n        FROM new_member, new_iteration\n        RETURNING member_id as id;\n        ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Uuid"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Text",
+        "Text",
+        "Int4",
+        "Text",
+        "Text",
+        "Bytea",
+        "Text"
+      ]
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "b56dbd80da525b6eb1aaffe527546b77fbc871dca45138c0a47ceea80ddd8099"
+}

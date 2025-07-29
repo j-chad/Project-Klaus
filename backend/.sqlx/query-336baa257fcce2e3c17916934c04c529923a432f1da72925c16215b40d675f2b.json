@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "\n        UPDATE token\n        SET last_seen_at = NOW()\n        WHERE token = $1 AND type = 'session'\n        RETURNING id, member_id, type AS \"token_type: TokenType\", created_at, expires_at, last_seen_at, user_agent, ip_address\n        ",
+  "query": "\n        DELETE FROM token\n        USING room_member\n        WHERE member_id = room_member.id\n        AND room_member.fingerprint = $1\n        AND token.type = 'challenge' \n        AND token.token = $2\n        RETURNING token.id, token.member_id, token.created_at, token.expires_at, token.last_seen_at, token.user_agent, token.ip_address\n        ",
   "describe": {
     "columns": [
       {
@@ -15,48 +15,33 @@
       },
       {
         "ordinal": 2,
-        "name": "token_type: TokenType",
-        "type_info": {
-          "Custom": {
-            "name": "token_type",
-            "kind": {
-              "Enum": [
-                "session",
-                "ephemeral",
-                "challenge"
-              ]
-            }
-          }
-        }
-      },
-      {
-        "ordinal": 3,
         "name": "created_at",
         "type_info": "Timestamptz"
       },
       {
-        "ordinal": 4,
+        "ordinal": 3,
         "name": "expires_at",
         "type_info": "Timestamptz"
       },
       {
-        "ordinal": 5,
+        "ordinal": 4,
         "name": "last_seen_at",
         "type_info": "Timestamptz"
       },
       {
-        "ordinal": 6,
+        "ordinal": 5,
         "name": "user_agent",
         "type_info": "Text"
       },
       {
-        "ordinal": 7,
+        "ordinal": 6,
         "name": "ip_address",
         "type_info": "Inet"
       }
     ],
     "parameters": {
       "Left": [
+        "Text",
         "Text"
       ]
     },
@@ -66,10 +51,9 @@
       false,
       false,
       false,
-      false,
       true,
       true
     ]
   },
-  "hash": "ee5dcd0ebb6706b2c935c863b1cb6cf2f66819a72c9ec9e9288b0f56288c225b"
+  "hash": "336baa257fcce2e3c17916934c04c529923a432f1da72925c16215b40d675f2b"
 }

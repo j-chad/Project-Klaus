@@ -1,0 +1,46 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n        WITH members_room AS (\n            SELECT id\n            FROM room\n            WHERE id = (SELECT room_id FROM room_member WHERE id = $1)\n        ),\n        current_iteration AS (\n            SELECT id\n            FROM game_iteration\n            WHERE room_id = (SELECT id FROM members_room)\n            ORDER BY iteration DESC\n            LIMIT 1\n        ),\n        current_round AS (\n            SELECT id, round_number\n            FROM onion_round\n            WHERE iteration_id = (SELECT id FROM current_iteration)\n            ORDER BY round_number DESC\n            LIMIT 1\n        ),\n        user_status AS (\n            SELECT EXISTS(\n                SELECT 1\n                FROM onion_message message\n                JOIN current_round ON message.round_id = current_round.id\n                WHERE message.member_id = $1\n            ) as has_sent_message\n        ),\n        remaining_count AS (\n            SELECT COUNT(*) as remaining\n            FROM room_member rm\n            WHERE rm.room_id = (SELECT id FROM members_room)\n              AND rm.id NOT IN (\n                SELECT message.member_id\n                FROM onion_message message\n                JOIN current_round ON message.round_id = current_round.id\n            )\n        ),\n        total_users AS (\n            SELECT COUNT(*) as total\n            FROM room_member\n            WHERE room_id = (SELECT id FROM members_room)\n        )\n        SELECT\n            current_round.round_number,\n            members_room.id AS room_id,\n            user_status.has_sent_message,\n            remaining_count.remaining,\n            total_users.total AS total_users\n        FROM user_status, remaining_count, members_room, current_round, total_users\n        ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "round_number",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 1,
+        "name": "room_id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 2,
+        "name": "has_sent_message",
+        "type_info": "Bool"
+      },
+      {
+        "ordinal": 3,
+        "name": "remaining",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 4,
+        "name": "total_users",
+        "type_info": "Int8"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      null,
+      null,
+      null
+    ]
+  },
+  "hash": "18b173a1173ba3d3f5d21817d9ded7dcea3d8b234eee860343739ca9f7f2b42a"
+}
