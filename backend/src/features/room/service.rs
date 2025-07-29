@@ -101,7 +101,7 @@ pub async fn start_game(db: &sqlx::PgPool, member_id: &Uuid) -> Result<(), AppEr
     Ok(())
 }
 
-pub async fn handle_santa_id_message(
+pub async fn handle_onion_message(
     db: &sqlx::PgPool,
     member_id: &Uuid,
     message_contents: &[String],

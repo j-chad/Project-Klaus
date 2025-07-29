@@ -28,7 +28,7 @@ pub struct JoinRoomRequest {
 }
 
 #[derive(Deserialize)]
-pub struct SantaIDMessageRequest {
+pub struct OnionMessageRequest {
     pub message_content: Vec<String>,
 }
 

@@ -17,7 +17,7 @@ pub fn build_router() -> axum::Router<SharedState> {
         .route("/create", post(handlers::create_room))
         .route("/join", post(handlers::join_room))
         .route("/start", post(handlers::start_game))
-        .route("/publish/message", post(handlers::handle_santa_id_message))
+        .route("/publish/message", post(handlers::handle_onion_message))
         .route("/publish/seed", post(handlers::handle_seed_reveal))
         .route("/publish/verification", post(handlers::handle_verification))
         .route("/commit/seed", post(handlers::handle_seed_commit)) // commit seed for next iteration

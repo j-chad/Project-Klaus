@@ -89,22 +89,22 @@ pub async fn join_room(
 pub async fn start_game(
     State(state): State<SharedState>,
     auth::Session(session): auth::Session,
-    Json(body): Json<schemas::SantaIDMessageRequest>,
+    Json(body): Json<schemas::OnionMessageRequest>,
 ) -> Result<impl IntoResponse, AppError> {
     service::requires_owner_permission(&state.db, &session.member_id).await?;
 
     service::start_game(&state.db, &session.member_id).await?;
-    service::handle_santa_id_message(&state.db, &session.member_id, &body.message_content).await?;
+    service::handle_onion_message(&state.db, &session.member_id, &body.message_content).await?;
 
     Ok(StatusCode::NO_CONTENT)
 }
 
-pub async fn handle_santa_id_message(
+pub async fn handle_onion_message(
     State(state): State<SharedState>,
     auth::Session(session): auth::Session,
-    Json(body): Json<schemas::SantaIDMessageRequest>,
+    Json(body): Json<schemas::OnionMessageRequest>,
 ) -> Result<impl IntoResponse, AppError> {
-    service::handle_santa_id_message(&state.db, &session.member_id, &body.message_content).await?;
+    service::handle_onion_message(&state.db, &session.member_id, &body.message_content).await?;
 
     Ok(StatusCode::NO_CONTENT)
 }
