@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "\n        WITH deleted AS (\n            DELETE FROM tokens\n            WHERE member_id = $1 AND type = $2\n        )\n        INSERT INTO tokens (member_id, type, token, expires_at, user_agent, ip_address)\n        VALUES ($1, $2, $3, $4, $5, $6)\n        ",
+  "query": "\n        WITH deleted AS (\n            DELETE FROM token\n            WHERE member_id = $1 AND type = $2\n        )\n        INSERT INTO token (member_id, type, token, expires_at, user_agent, ip_address)\n        VALUES ($1, $2, $3, $4, $5, $6)\n        ",
   "describe": {
     "columns": [],
     "parameters": {
@@ -26,5 +26,5 @@
     },
     "nullable": []
   },
-  "hash": "c215be36e2745a011b5cf0577c2e9a0bbe9dfb9cb90254c472b31f6f2eede515"
+  "hash": "adc105a98dfa74ad1b50125e906f898497684d02b6351e9d84f0125021de1389"
 }

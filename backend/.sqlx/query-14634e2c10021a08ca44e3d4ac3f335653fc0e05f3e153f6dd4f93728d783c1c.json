@@ -1,0 +1,28 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n        WITH current_iteration AS (\n            SELECT id\n            FROM game_iteration\n            WHERE room_id = $1\n            ORDER BY iteration DESC\n            LIMIT 1\n        )\n        SELECT seed as \"seed!\", name\n        FROM member_iteration_state member_state\n        JOIN current_iteration ON member_state.iteration_id = current_iteration.id\n        JOIN room_member member ON member_state.member_id = member.id\n        WHERE member_state.seed IS NOT NULL\n            AND member.room_id = $1\n        ORDER BY name\n        ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "seed!",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 1,
+        "name": "name",
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      true,
+      false
+    ]
+  },
+  "hash": "14634e2c10021a08ca44e3d4ac3f335653fc0e05f3e153f6dd4f93728d783c1c"
+}

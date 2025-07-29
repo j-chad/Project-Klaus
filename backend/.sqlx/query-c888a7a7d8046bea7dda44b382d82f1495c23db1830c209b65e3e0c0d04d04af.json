@@ -1,0 +1,14 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n        UPDATE game_iteration\n        SET started_at = NOW(), phase = 'santa_id'\n        WHERE\n            room_id = (SELECT room_id FROM room_member WHERE id = $1)\n            AND iteration = 0\n            AND started_at IS NULL\n            AND phase = 'lobby'\n        ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "c888a7a7d8046bea7dda44b382d82f1495c23db1830c209b65e3e0c0d04d04af"
+}

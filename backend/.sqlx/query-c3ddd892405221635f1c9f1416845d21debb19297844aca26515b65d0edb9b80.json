@@ -1,0 +1,22 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n        WITH current_iteration AS (\n            SELECT game_iteration.id\n            FROM room_member\n            JOIN game_iteration ON room_member.room_id = game_iteration.room_id\n            WHERE room_member.id = $1\n            ORDER BY iteration DESC\n            LIMIT 1\n        )\n        UPDATE member_iteration_state\n        SET verification_status = TRUE\n        WHERE member_id = $1\n        AND iteration_id = (SELECT id FROM current_iteration)\n        RETURNING (\n            SELECT COUNT(*)\n            FROM member_iteration_state\n            JOIN current_iteration ON member_iteration_state.iteration_id = current_iteration.id\n            WHERE verification_status = FALSE\n        ) AS remaining_users\n        ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "remaining_users",
+        "type_info": "Int8"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      null
+    ]
+  },
+  "hash": "c3ddd892405221635f1c9f1416845d21debb19297844aca26515b65d0edb9b80"
+}

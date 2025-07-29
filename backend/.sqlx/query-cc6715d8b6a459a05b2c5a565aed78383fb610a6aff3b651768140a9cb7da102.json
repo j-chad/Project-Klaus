@@ -1,0 +1,16 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n        WITH current_iteration AS (\n            SELECT game_iteration.id, game_iteration.iteration, game_iteration.room_id\n            FROM room_member\n            JOIN game_iteration ON room_member.room_id = game_iteration.room_id\n            WHERE room_member.id = $1\n            AND phase = 'verification'\n            ORDER BY iteration DESC\n            LIMIT 1\n        ),\n        state_update AS (\n            UPDATE member_iteration_state\n            SET verification_status = TRUE, rejected_proof = $2\n            WHERE member_id = $1\n            AND iteration_id = (SELECT id FROM current_iteration)\n        ),\n        update_phase as (\n            UPDATE game_iteration\n            SET phase = 'rejected'\n            FROM current_iteration\n            WHERE game_iteration.id = current_iteration.id\n        ),\n        new_iteration AS (\n            INSERT INTO game_iteration (room_id, iteration, phase)\n            SELECT current_iteration.room_id, current_iteration.iteration + 1, 'santa_id'\n            FROM current_iteration\n            RETURNING id\n        )\n        INSERT INTO member_iteration_state (member_id, seed_commitment, iteration_id)\n        SELECT $1, $3, new_iteration.id\n        FROM new_iteration\n        ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Text",
+        "Text"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "cc6715d8b6a459a05b2c5a565aed78383fb610a6aff3b651768140a9cb7da102"
+}

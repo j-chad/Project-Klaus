@@ -1,0 +1,15 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n        WITH current_iteration AS (\n            SELECT id, room_id\n            FROM game_iteration\n            WHERE room_id = (SELECT room_id FROM room_member WHERE id = $1)\n            AND phase = 'santa_id'\n            ORDER BY iteration DESC\n            LIMIT 1\n        )\n        INSERT INTO member_iteration_state (member_id, seed_commitment, iteration_id)\n        SELECT $1, $2, current_iteration.id\n        FROM current_iteration\n        ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Text"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "ae0349d06cc3513b15fc12b5efe3e86c882c8aa5422fa43c3750b246071a7e20"
+}

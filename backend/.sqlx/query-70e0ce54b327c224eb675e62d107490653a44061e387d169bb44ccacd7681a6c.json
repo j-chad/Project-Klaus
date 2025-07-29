@@ -1,0 +1,16 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n        WITH current_iteration AS (\n            SELECT id\n            FROM game_iteration\n            WHERE room_id = $1\n            ORDER BY iteration DESC\n            LIMIT 1\n        ),\n        current_round AS (\n            SELECT id\n            FROM onion_round\n            WHERE iteration_id = (SELECT id FROM current_iteration)\n            ORDER BY round_number DESC\n            LIMIT 1\n        )\n        INSERT INTO onion_message (member_id, content, round_id)\n        SELECT $2, $3, current_round.id\n        FROM current_round\n        ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid",
+        "TextArray"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "70e0ce54b327c224eb675e62d107490653a44061e387d169bb44ccacd7681a6c"
+}

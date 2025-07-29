@@ -1,0 +1,22 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n        SELECT seed_commitment\n        FROM member_iteration_state\n        WHERE member_id = $1\n        ORDER BY iteration_id DESC\n        LIMIT 1\n        ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "seed_commitment",
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "a1d54dfd9fa8446eff5b48244fa0409a780c734299fbb2b96037f138969bb632"
+}

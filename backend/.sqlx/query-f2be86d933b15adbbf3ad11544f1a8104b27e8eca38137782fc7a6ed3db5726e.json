@@ -1,0 +1,36 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n        SELECT phase AS \"game_phase: GamePhase\"\n        FROM room_member\n        JOIN game_iteration on room_member.room_id = game_iteration.room_id\n        WHERE room_member.id = $1\n        ORDER BY game_iteration.iteration DESC\n        LIMIT 1\n        ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "game_phase: GamePhase",
+        "type_info": {
+          "Custom": {
+            "name": "game_phase",
+            "kind": {
+              "Enum": [
+                "lobby",
+                "santa_id",
+                "seed_reveal",
+                "verification",
+                "rejected",
+                "completed"
+              ]
+            }
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "f2be86d933b15adbbf3ad11544f1a8104b27e8eca38137782fc7a6ed3db5726e"
+}

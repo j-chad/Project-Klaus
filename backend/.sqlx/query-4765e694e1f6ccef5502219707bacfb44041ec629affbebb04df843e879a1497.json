@@ -1,0 +1,22 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n        WITH current_iteration AS (\n            SELECT id\n            FROM game_iteration\n            WHERE room_id = $1\n            ORDER BY iteration DESC\n            LIMIT 1\n        ),\n        latest_round AS (\n            SELECT id\n            FROM onion_round\n            WHERE iteration_id = (SELECT id FROM current_iteration)\n            ORDER BY round_number DESC\n            LIMIT 1\n        )\n        SELECT array_agg(message_content) AS all_messages\n        FROM onion_message message\n        JOIN latest_round ON message.round_id = latest_round.id\n        CROSS JOIN LATERAL unnest(message.content) AS message_content\n        ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "all_messages",
+        "type_info": "TextArray"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      null
+    ]
+  },
+  "hash": "4765e694e1f6ccef5502219707bacfb44041ec629affbebb04df843e879a1497"
+}
