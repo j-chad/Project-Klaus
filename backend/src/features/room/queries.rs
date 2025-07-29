@@ -415,14 +415,23 @@ pub async fn reveal_seed(
 pub async fn mark_as_verified(db: &PgPool, member_id: &Uuid) -> Result<Option<i32>, sqlx::Error> {
     sqlx::query!(
         r#"
+        WITH current_iteration AS (
+            SELECT game_iteration.id
+            FROM room_member
+            JOIN game_iteration ON room_member.room_id = game_iteration.room_id
+            WHERE room_member.id = $1
+            ORDER BY iteration DESC
+            LIMIT 1
+        )
         UPDATE member_iteration_state
         SET verification_status = TRUE
         WHERE member_id = $1
+        AND iteration_id = (SELECT id FROM current_iteration)
         RETURNING (
             SELECT COUNT(*)
-            FROM room_member
-            WHERE room_id = (SELECT room_id FROM room_member WHERE id = $1)
-              AND verification_status IS FALSE
+            FROM member_iteration_state
+            JOIN current_iteration ON member_iteration_state.iteration_id = current_iteration.id
+            WHERE verification_status = FALSE
         ) AS remaining_users
         "#,
         member_id
@@ -439,16 +448,25 @@ pub async fn mark_as_rejected(
 ) -> Result<(), sqlx::Error> {
     sqlx::query!(
         r#"
-        WITH room_update AS (
-            UPDATE room_member
+        WITH current_iteration AS (
+            SELECT game_iteration.id
+            FROM room_member
+            JOIN game_iteration ON room_member.room_id = game_iteration.room_id
+            WHERE room_member.id = $1
+            AND phase = 'verification'
+            ORDER BY iteration DESC
+            LIMIT 1
+        ),
+        state_update AS (
+            UPDATE member_iteration_state
             SET verification_status = FALSE, rejected_proof = $2
-            WHERE id = $1
-            RETURNING room_id
+            WHERE member_id = $1
+            AND iteration_id = (SELECT id FROM current_iteration)
         )
-        UPDATE room
-        SET game_phase = 'rejected'
-        FROM room_update
-        WHERE room.id = room_update.room_id
+        UPDATE game_iteration
+        SET phase = 'rejected'
+        FROM current_iteration
+        WHERE game_iteration.id = current_iteration.id
         "#,
         member_id,
         proof
