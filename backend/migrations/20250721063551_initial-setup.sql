@@ -33,14 +33,14 @@ CREATE TRIGGER trigger_update_room_updated_at
 EXECUTE PROCEDURE update_updated_at_column();
 
 CREATE TABLE game_iteration (
-    id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    room_id     UUID NOT NULL REFERENCES room(id) ON DELETE CASCADE,
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    room_id UUID NOT NULL REFERENCES room(id) ON DELETE CASCADE,
 
-    iteration   INTEGER NOT NULL DEFAULT 0, -- 0 is the first iteration, incremented for each new game
-    phase       game_phase NOT NULL DEFAULT 'lobby',
+    iteration INTEGER NOT NULL DEFAULT 0, -- 0 is the first iteration, incremented for each new game
+    phase game_phase NOT NULL DEFAULT 'lobby',
 
-    created_at  TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL,
-    updated_at  TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL,
     started_at TIMESTAMP WITH TIME ZONE DEFAULT NULL,
 
     UNIQUE (room_id, iteration),
@@ -49,19 +49,18 @@ CREATE TABLE game_iteration (
         (iteration = 0) OR
         (iteration > 0 AND phase != 'lobby')
     )
-
 );
 
 CREATE TABLE room_member (
-    id          UUID PRIMARY KEY         DEFAULT gen_random_uuid(),
-    room_id     UUID    NOT NULL REFERENCES room(id) ON DELETE CASCADE,
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    room_id UUID NOT NULL REFERENCES room(id) ON DELETE CASCADE,
 
-    name        TEXT NOT NULL,
+    name TEXT NOT NULL,
     fingerprint TEXT UNIQUE NOT NULL,
-    public_key  BYTEA NOT NULL,
-    is_owner    BOOLEAN NOT NULL         DEFAULT FALSE,
+    public_key BYTEA NOT NULL,
+    is_owner BOOLEAN NOT NULL DEFAULT FALSE,
 
-    joined_at   TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    joined_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE TABLE member_iteration_state (
@@ -89,40 +88,40 @@ CREATE TYPE token_type AS ENUM (
 );
 
 CREATE TABLE token (
-    id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    member_id   UUID NOT NULL REFERENCES room_member(id) ON DELETE CASCADE,
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    member_id UUID NOT NULL REFERENCES room_member(id) ON DELETE CASCADE,
 
-    token       TEXT UNIQUE NOT NULL,
-    type        token_type NOT NULL,
+    token TEXT UNIQUE NOT NULL,
+    type token_type NOT NULL,
 
-    user_agent  TEXT,
-    ip_address  INET,
+    user_agent TEXT,
+    ip_address INET,
 
-    created_at  TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL,
     expires_at TIMESTAMP WITH TIME ZONE NOT NULL,
     last_seen_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL
 );
 
 CREATE TABLE onion_round (
-    id          UUID PRIMARY KEY         DEFAULT gen_random_uuid(),
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     iteration_id UUID NOT NULL REFERENCES game_iteration(id) ON DELETE CASCADE,
 
     round_number INTEGER NOT NULL, -- 0 to N, where N is the number of members in the room
 
-    created_at  TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL,
 
     UNIQUE (iteration_id, round_number),
     CHECK (round_number >= 0)
 );
 
 CREATE TABLE onion_message (
-    id          UUID PRIMARY KEY         DEFAULT gen_random_uuid(),
-    round_id    UUID    NOT NULL REFERENCES onion_round(id) ON DELETE CASCADE,
-    member_id   UUID    NOT NULL REFERENCES room_member(id) ON DELETE CASCADE,
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    round_id UUID NOT NULL REFERENCES onion_round(id) ON DELETE CASCADE,
+    member_id UUID NOT NULL REFERENCES room_member(id) ON DELETE CASCADE,
 
-    content     TEXT ARRAY NOT NULL, -- it is possible that a member decrypts multiple messages per round.
+    content TEXT ARRAY NOT NULL, -- it is possible that a member decrypts multiple messages per round.
 
-    created_at  TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL,
 
     UNIQUE (round_id, member_id) -- each member can only send one message per round
 );
