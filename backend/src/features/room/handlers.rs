@@ -129,12 +129,12 @@ pub async fn handle_verification(
     Ok(StatusCode::NO_CONTENT)
 }
 
-pub async fn handle_rejection_ack(
+pub async fn handle_seed_commit(
     State(state): State<SharedState>,
     auth::Session(session): auth::Session,
-    Json(body): Json<schemas::ResultAckRequest>,
+    Json(body): Json<schemas::CommitSeedRequest>,
 ) -> Result<impl IntoResponse, AppError> {
-    service::acknowledge_rejection(&state.db, &session.member_id, &body.seed_hash).await?;
+    service::join_next_iteration(&state.db, &session.member_id, &body.seed_hash).await?;
 
     Ok(StatusCode::NO_CONTENT)
 }

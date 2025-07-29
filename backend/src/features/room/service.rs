@@ -108,7 +108,7 @@ pub async fn handle_santa_id_message(
 ) -> Result<(), AppError> {
     expect_game_phase(db, member_id, GamePhase::SantaId).await?;
 
-    let status = queries::get_message_round_status(db, member_id).await?;
+    let status = queries::get_onion_round_status(db, member_id).await?;
     if status.user_has_sent_message {
         return Err(RoomError::AlreadySentMessage.into());
     } else if status.users_remaining == 0 {
@@ -116,7 +116,7 @@ pub async fn handle_santa_id_message(
         return Err(AppError::unknown_error());
     }
 
-    queries::create_santa_id_message(db, &status.room_id, member_id, message_contents).await?;
+    queries::create_onion_message(db, &status.room_id, member_id, message_contents).await?;
 
     if status.users_remaining == 1 {
         advance_message_round(
@@ -169,8 +169,8 @@ pub async fn handle_verification(
     // if accepted - update the member's verification status
     // if all members have accepted, set the game phase to Complete
 
-    if let VerificationRequest::Rejected { proof } = verification_request {
-        return handle_verification_rejection(db, member_id, proof).await;
+    if let VerificationRequest::Rejected { proof, seed_hash } = verification_request {
+        return handle_verification_rejection(db, member_id, proof, seed_hash).await;
     }
 
     let remaining_verifications = queries::mark_as_verified(db, member_id)
@@ -187,22 +187,15 @@ pub async fn handle_verification(
     Ok(())
 }
 
-pub async fn acknowledge_rejection(
+pub async fn join_next_iteration(
     db: &sqlx::PgPool,
     member_id: &Uuid,
     new_seed_commitment: &str,
 ) -> Result<(), AppError> {
-    expect_game_phase(db, member_id, GamePhase::Rejected).await?;
+    // If the game just reset we are in the SantaId phase.
+    expect_game_phase(db, member_id, GamePhase::SantaId).await?;
 
-    let remaining = queries::acknowledge_result(db, member_id, new_seed_commitment).await?;
-
-    // TODO: check if the returning value is before or after the update.
-    //       I suspect it is before
-    if remaining == 1 {
-        // restart the game
-        let room_id = queries::get_room_id_by_member(db, member_id).await?;
-        queries::restart_game(db, &room_id).await?;
-    }
+    queries::join_next_iteration(db, member_id, new_seed_commitment).await?;
 
     Ok(())
 }
@@ -211,13 +204,14 @@ async fn handle_verification_rejection(
     db: &sqlx::PgPool,
     member_id: &Uuid,
     proof: &str,
+    new_seed_commitment: &str,
 ) -> Result<(), AppError> {
     let santa_id = base64_hash(proof).map_err(|_| RoomError::InvalidRejectionProof)?;
 
     let room_id = queries::get_room_id_by_member(db, member_id).await?;
 
     // check hash is a valid santa id
-    let santa_ids = queries::get_santa_id_messages(db, &room_id).await?;
+    let santa_ids = queries::get_onion_messages(db, &room_id).await?;
     if !santa_ids.contains(&santa_id) {
         return Err(RoomError::LiarLiarPantsOnFire(
             "provided rejection proof does not match any Santa ID".to_string(),
@@ -242,7 +236,7 @@ async fn handle_verification_rejection(
     }
 
     // proof is valid
-    queries::mark_as_rejected(db, member_id, proof).await?;
+    queries::mark_as_rejected_and_restart(db, member_id, proof, new_seed_commitment).await?;
 
     Ok(())
 }

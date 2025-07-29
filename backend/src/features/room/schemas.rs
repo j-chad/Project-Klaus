@@ -41,10 +41,10 @@ pub struct SeedRevealRequest {
 #[serde(tag = "status", rename_all = "lowercase")]
 pub enum VerificationRequest {
     Accept,
-    Rejected { proof: String },
+    Rejected { proof: String, seed_hash: String },
 }
 
 #[derive(Deserialize)]
-pub struct ResultAckRequest {
+pub struct CommitSeedRequest {
     pub seed_hash: String,
 }
