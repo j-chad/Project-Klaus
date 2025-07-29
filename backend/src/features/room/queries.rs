@@ -480,16 +480,24 @@ pub async fn mark_as_rejected(
 pub async fn get_onion_messages(db: &PgPool, room_id: &Uuid) -> Result<Vec<String>, sqlx::Error> {
     sqlx::query!(
         r#"
+        WITH current_iteration AS (
+            SELECT id
+            FROM game_iteration
+            WHERE room_id = $1
+            ORDER BY iteration DESC
+            LIMIT 1
+        ),
+        latest_round AS (
+            SELECT id
+            FROM onion_round
+            WHERE iteration_id = (SELECT id FROM current_iteration)
+            ORDER BY round_number DESC
+            LIMIT 1
+        )
         SELECT array_agg(message_content) AS all_messages
         FROM onion_message message
-        JOIN onion_round round ON message.round_id = round.id
+        JOIN latest_round ON message.round_id = latest_round.id
         CROSS JOIN LATERAL unnest(message.content) AS message_content
-        WHERE round.room_id = $1
-          AND round.round_number = (
-              SELECT MAX(round_number)
-              FROM onion_round
-              WHERE room_id = $1
-          );
         "#,
         room_id
     )
