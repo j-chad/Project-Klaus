@@ -22,8 +22,8 @@ pub fn get_assignment(
     mut target_names: Vec<String>,
 ) -> Option<String> {
     // Sort the lists to ensure deterministic behavior
-    santa_ids.sort();
-    target_names.sort();
+    santa_ids.sort_unstable();
+    target_names.sort_unstable();
 
     let mut available: Vec<_> = (0..santa_ids.len()).collect();
     let mut rng = Pcg32::new(seed);
