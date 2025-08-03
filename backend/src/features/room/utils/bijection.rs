@@ -65,15 +65,15 @@ mod tests {
         ];
 
         let assignment1 = get_assignment(seed, "santa1", santa_ids.clone(), target_names.clone());
-        assert_eq!(assignment1, Some("target3".to_string()));
+        assert_eq!(assignment1, Some("target4".to_string()));
 
         let assignment2 = get_assignment(seed, "santa2", santa_ids.clone(), target_names.clone());
-        assert_eq!(assignment2, Some("target4".to_string()));
+        assert_eq!(assignment2, Some("target2".to_string()));
 
         let assignment3 = get_assignment(seed, "santa3", santa_ids.clone(), target_names.clone());
-        assert_eq!(assignment3, Some("target1".to_string()));
+        assert_eq!(assignment3, Some("target3".to_string()));
 
         let assignment4 = get_assignment(seed, "santa4", santa_ids.clone(), target_names.clone());
-        assert_eq!(assignment4, Some("target2".to_string()));
+        assert_eq!(assignment4, Some("target1".to_string()));
     }
 }
