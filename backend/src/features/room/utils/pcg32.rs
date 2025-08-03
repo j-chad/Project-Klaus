@@ -58,3 +58,43 @@ impl Pcg32 {
         self.state = self.state.wrapping_mul(MULTIPLIER).wrapping_add(INCREMENT);
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_pcg32_deterministic() {
+        let seed = 42;
+        let mut rng = Pcg32::new(seed);
+
+        // Generate a sequence of numbers
+        let numbers: Vec<u32> = (0..10).map(|_| rng.next_u32()).collect();
+
+        // Expected values based on the PCG algorithm with the given seed
+        let expected = vec![
+            0xc2f57bd6, 0x6b07c4a9, 0x72b7b29b, 0x44215383, 0xf5af5ead, 0x68beb632, 0xcbc7312c,
+            0xd5efc7d7, 0x7aec0808, 0xff133ab5,
+        ];
+
+        assert_eq!(numbers, expected);
+    }
+
+    #[test]
+    fn test_pcg32_gen_range() {
+        let seed = 12345;
+        let mut rng = Pcg32::new(seed);
+
+        // Test generating numbers in the range [0, 10)
+        let range = 10;
+        let generated_numbers: Vec<u32> = (0..100).map(|_| rng.gen_range(range)).collect();
+
+        // Check that all generated numbers are within the range
+        for &num in &generated_numbers {
+            assert!(
+                num < range,
+                "Generated number {num} is out of range [0, {range})"
+            );
+        }
+    }
+}
