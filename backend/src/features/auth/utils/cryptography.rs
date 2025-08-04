@@ -2,6 +2,7 @@ use crate::features::auth::errors::AuthError;
 use base64::Engine;
 use base64::prelude::BASE64_STANDARD;
 use rand::RngCore;
+use rand::distributions::{Distribution, Uniform};
 use rand::rngs::OsRng;
 use rsa::pkcs8::DecodePublicKey;
 use rsa::{Oaep, RsaPublicKey};
@@ -27,20 +28,17 @@ pub fn decode_public_key(public_key: &str) -> Result<(Vec<u8>, String), AuthErro
     // validate the key - we just need the bytes for now.
     RsaPublicKey::from_public_key_der(&public_key_bytes).or(Err(AuthError::InvalidPublicKey))?;
 
-    let fingerprint = calculate_key_fingerprint(&public_key_bytes);
+    let fingerprint = sha256_hex(&public_key_bytes);
 
     Ok((public_key_bytes, fingerprint))
 }
 
-pub fn calculate_key_fingerprint(public_key_bytes: &[u8]) -> String {
+pub fn sha256_hex(bytes: &[u8]) -> String {
     let mut hasher = Sha256::new();
-    hasher.update(public_key_bytes);
+    hasher.update(bytes);
     let fingerprint = hasher.finalize();
 
-    fingerprint.iter().fold(String::new(), |mut acc, &b| {
-        let _ = write!(acc, "{b:02x}");
-        acc
-    })
+    array_to_hex_string(&fingerprint)
 }
 
 pub fn encrypt_challenge_token(token: &str, public_key_bytes: &[u8]) -> Result<String, AuthError> {
@@ -55,4 +53,22 @@ pub fn encrypt_challenge_token(token: &str, public_key_bytes: &[u8]) -> Result<S
         .or(Err(AuthError::TokenEncryptionFailed))?;
 
     Ok(BASE64_STANDARD.encode(encrypted_data))
+}
+
+const ROOM_CODE_LENGTH: usize = 8;
+const ROOM_CODE_CHARSET: &[u8] = b"ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+pub fn generate_room_code() -> String {
+    let mut rng = OsRng;
+    Uniform::from(0..ROOM_CODE_CHARSET.len())
+        .sample_iter(&mut rng)
+        .take(ROOM_CODE_LENGTH)
+        .map(|i| ROOM_CODE_CHARSET[i] as char)
+        .collect()
+}
+
+fn array_to_hex_string(array: &[u8]) -> String {
+    array.iter().fold(String::new(), |mut acc, &b| {
+        let _ = write!(acc, "{b:02x}");
+        acc
+    })
 }

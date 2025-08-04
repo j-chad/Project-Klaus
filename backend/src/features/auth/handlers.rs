@@ -1,7 +1,4 @@
-use super::schemas::{
-    ChallengeResponse, ChallengeVerificationRequest, CreateChallengeTokenRequest,
-    EphemeralTokenResponse, JoinRoomRequest,
-};
+use super::schemas;
 use super::{middleware::Session, service};
 use crate::error::AppError;
 use crate::features::auth::utils::new_session_cookie;
@@ -12,41 +9,12 @@ use axum::http::{HeaderMap, StatusCode};
 use axum::response::IntoResponse;
 use axum_extra::extract::CookieJar;
 use std::net::SocketAddr;
-use validator::Validate;
-
-pub async fn join_room(
-    State(state): State<SharedState>,
-    ConnectInfo(addr): ConnectInfo<SocketAddr>,
-    headers: HeaderMap,
-    cookies: CookieJar,
-    Json(body): Json<JoinRoomRequest>,
-) -> Result<impl IntoResponse, AppError> {
-    body.validate()?;
-
-    let user_id = service::join_room(&state.db, &body).await?;
-
-    let ip_address = Some(addr.ip());
-    let user_agent = headers.get("User-Agent").and_then(|h| h.to_str().ok());
-
-    let session_token =
-        service::create_session_token(&state.db, user_id, user_agent, ip_address).await?;
-    let session_cookie = new_session_cookie(&state.config.auth, &session_token);
-
-    let ephemeral_token =
-        service::create_ephemeral_token(&state.db, user_id, user_agent, ip_address).await?;
-
-    Ok((
-        StatusCode::CREATED,
-        cookies.add(session_cookie),
-        Json(EphemeralTokenResponse { ephemeral_token }),
-    ))
-}
 
 pub async fn create_challenge(
     State(state): State<SharedState>,
     ConnectInfo(addr): ConnectInfo<SocketAddr>,
     headers: HeaderMap,
-    Json(request): Json<CreateChallengeTokenRequest>,
+    Json(request): Json<schemas::CreateChallengeTokenRequest>,
 ) -> Result<impl IntoResponse, AppError> {
     let user_agent = headers.get("User-Agent").and_then(|h| h.to_str().ok());
     let ip_address = Some(addr.ip());
@@ -57,7 +25,7 @@ pub async fn create_challenge(
 
     Ok((
         StatusCode::CREATED,
-        Json(ChallengeResponse {
+        Json(schemas::ChallengeResponse {
             challenge: challenge_token,
         }),
     ))
@@ -68,7 +36,7 @@ pub async fn verify_challenge(
     ConnectInfo(addr): ConnectInfo<SocketAddr>,
     headers: HeaderMap,
     cookies: CookieJar,
-    Json(request): Json<ChallengeVerificationRequest>,
+    Json(request): Json<schemas::ChallengeVerificationRequest>,
 ) -> Result<impl IntoResponse, AppError> {
     let user_agent = headers.get("User-Agent").and_then(|h| h.to_str().ok());
     let ip_address = Some(addr.ip());
@@ -101,7 +69,7 @@ pub async fn create_ephemeral_token(
 
     Ok((
         StatusCode::CREATED,
-        Json(EphemeralTokenResponse { ephemeral_token }),
+        Json(schemas::EphemeralTokenResponse { ephemeral_token }),
     ))
 }
 

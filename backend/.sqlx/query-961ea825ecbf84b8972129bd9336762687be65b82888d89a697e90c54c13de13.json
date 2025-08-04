@@ -1,0 +1,34 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n        SELECT room.id, room.max_members, (\n            CASE\n                WHEN max_members IS NOT NULL THEN (\n                    SELECT COUNT(*)\n                    FROM room_member\n                    WHERE room_member.room_id = room.id\n                )\n            END\n        ) AS \"member_count\"\n        FROM room\n        WHERE join_code = $1\n        ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 1,
+        "name": "max_members",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 2,
+        "name": "member_count",
+        "type_info": "Int8"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Text"
+      ]
+    },
+    "nullable": [
+      false,
+      true,
+      null
+    ]
+  },
+  "hash": "961ea825ecbf84b8972129bd9336762687be65b82888d89a697e90c54c13de13"
+}

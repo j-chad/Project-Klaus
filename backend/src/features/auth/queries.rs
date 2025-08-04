@@ -1,72 +1,8 @@
-use super::models::{Room, Token, TokenType};
+use super::models::{Token, TokenType};
 use sqlx::PgPool;
 use sqlx::types::ipnet::IpNet;
 use std::net::IpAddr;
 use uuid::Uuid;
-
-/// Fetches a room by its ID.
-pub async fn get_room_by_join_code(
-    pool: &PgPool,
-    join_code: &str,
-) -> Result<Option<Room>, sqlx::Error> {
-    sqlx::query_as!(
-        Room,
-        r#"
-        SELECT room.id, room.name, room.join_code, room.created_at, room.updated_at, room.max_members, room.started_at, (
-            CASE
-                WHEN max_members IS NOT NULL THEN (
-                    SELECT COUNT(*)
-                    FROM room_member
-                    WHERE room_member.room_id = room.id
-                )
-            END
-        ) AS "member_count"
-        FROM room
-        WHERE deleted_at IS NULL AND join_code = $1
-        "#,
-        join_code
-    )
-    .fetch_optional(pool)
-    .await
-}
-
-/// Creates a new room member.
-pub async fn new_room_member(
-    pool: &PgPool,
-    room_id: Uuid,
-    name: &str,
-    fingerprint: &str,
-    public_key: &[u8],
-) -> Result<Uuid, sqlx::Error> {
-    sqlx::query!(
-        r#"
-        INSERT INTO room_member (room_id, fingerprint, public_key, name)
-        VALUES ($1, $2, $3, $4)
-        RETURNING id;
-        "#,
-        room_id,
-        fingerprint,
-        public_key,
-        name
-    )
-    .fetch_one(pool)
-    .await
-    .map(|row| row.id)
-}
-
-pub async fn get_current_member_count(pool: &PgPool, room_id: Uuid) -> Result<i64, sqlx::Error> {
-    sqlx::query!(
-        r#"
-        SELECT COUNT(*) AS count
-        FROM room_member
-        WHERE room_id = $1
-        "#,
-        room_id
-    )
-    .fetch_one(pool)
-    .await
-    .map(|row| row.count.unwrap_or(0))
-}
 
 /// Creates a new token for a member.
 ///
@@ -112,7 +48,7 @@ pub async fn get_session_token_and_update_access_time(
         UPDATE token
         SET last_seen_at = NOW()
         WHERE token = $1 AND type = 'session'
-        RETURNING id, member_id, type AS "token_type: TokenType", created_at, expires_at, last_seen_at, user_agent, ip_address
+        RETURNING id, member_id, created_at, expires_at, last_seen_at, user_agent, ip_address
         "#,
         token
     )
@@ -165,7 +101,7 @@ pub async fn get_and_delete_challenge_token_for_fingerprint(
         AND room_member.fingerprint = $1
         AND token.type = 'challenge' 
         AND token.token = $2
-        RETURNING token.id, token.member_id, token.type AS "token_type: TokenType", token.created_at, token.expires_at, token.last_seen_at, token.user_agent, token.ip_address
+        RETURNING token.id, token.member_id, token.created_at, token.expires_at, token.last_seen_at, token.user_agent, token.ip_address
         "#,
         fingerprint,
         token
@@ -189,7 +125,7 @@ pub async fn get_and_delete_ephemeral_token_by_room_code(
         AND r.join_code = $1
         AND token.token = $2
         AND token.type = 'ephemeral'
-        RETURNING token.id, token.member_id, token.type AS "token_type: TokenType", token.created_at, token.expires_at, token.last_seen_at, token.user_agent, token.ip_address
+        RETURNING token.id, token.member_id, token.created_at, token.expires_at, token.last_seen_at, token.user_agent, token.ip_address
         "#,
         room_code,
         token
